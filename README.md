@@ -1,4 +1,8 @@
 # IMB
 Isotopic mass balance code
-This is a line from Rstudio
-Line added from GitHub
+
+Weather Metadata:
+
+Jackson Hole Airport:
+Currently using for Relative Humidity. 
+BoR Dam:
