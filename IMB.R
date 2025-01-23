@@ -1,5 +1,5 @@
 library(tidyverse)
-library(readxl) #Calling in readxl to read in excel files
+library(readxl)
 library(dataRetrieval)
 library(stats)
 
@@ -15,65 +15,66 @@ jack.airport.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/GSOD.Jacks
   #Grouping by year and month
   group_by(year, month) |> 
   subset(select = -c(date)) |> 
-  #Calculating the monthly average of RH because analysis is conducted on a monthly basis
-  summarise(RH.jack.ap = mean(RH)) |>
+  #Calculating the monthly average of RH because analysis is conducted on a monthly basis and percentage
+  summarise(RH.jack.ap = (mean(RH)/100)) |>
   #Filtering the summer months
   filter(month >= 5 & month < 10) 
 
-#BoR data has min temp, max temp but removed. Using for precipitation
+#BoR data has min temp, max temp, and SWE but removed. Using for precipitation
 bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.txt") |> 
   subset(select = -c(Notes)) |>
   transmute(date = as.Date(DateTime),
-            prcp = jck_pp * 0.0254, #m
-            snow = jck_sp * 0.0254, #SWE, m
-            air.temp = (jck_mm-32)/(9/5),#celcius
-            air.tempk = (jck_mm-32)/(9/5) + 273.15,#temp in kelvin
+            prcp.m = jck_pp * 0.0254, #m
+            air.temp.c = (jck_mm-32)/(9/5),#celcius
+            air.temp.k = (jck_mm-32)/(9/5) + 273.15,#temp in kelvin
             year = as.numeric(format(date, format = "%Y")),
             month = as.numeric(format(date, format = "%m"))) |> 
   subset(select = -c(date)) |>
   #Grouping by year and month
   group_by(year, month) |> 
   #Taking the monthly averages and sums
-  summarise(prcp.bor = sum(prcp),
-            snow.bor = sum(snow),
-            air.temp.bor =  mean(air.temp),
-            air.tempk.bor = mean(air.tempk)) |> 
+  summarise(prcp.bor.m = sum(prcp.m),
+            air.temp.bor.c =  mean(air.temp.c),
+            air.temp.bor.k = mean(air.temp.k)) |> 
   #Filtering the summer months
   filter(month >= 5 & month < 10)
 
 #Calling upper snake precipitation which will allow me to apply a theisen approach to rainfall amounts of Jackson Lake
 upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.snake.river.precip.csv") |> 
   mutate(date = as.Date(DATE),
-         prcp = PRCP * 0.0254,
+         prcp.m = PRCP * 0.0254,
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m"))) |> 
   #Grouping by year and month
   group_by(year, month) |> 
   #Filtering the summer months
   filter(month >= 5 & month < 10) |> 
-  subset(select = c(year, month, prcp)) |> 
+  subset(select = c(year, month, prcp.m)) |> 
   #Taking the monthly sums
-  mutate(prcp = sum(prcp)) |> 
+  mutate(prcp.m = sum(prcp.m)) |> 
   distinct()
 
 #Releases from Jackson Lake, may use discharge from the USGS gauge
 bor.releases <- read.csv("~/Documents/Data/Chapter.3/bor.dam.releases/bor.dam.releases.csv") %>% 
   mutate(date = as.Date(DateTime),
-         jck_m3 = jck_af * 1233.48, #acre-feet to m3
-         jckkm3 = jck_af * 1.23348e-6,
-         jckper = jck_af / (847000 * 1233.48),
+         #converting volume from acre-foot to km3
+         jck.km3 = jck_af * 1.23348e-6,
+         #calculating the percentage full Jackson lake is 
+         jck.per = jck_af / (847000 * 1.23348e-6),
          #Calculating lake surface area from the relationship developed from remote sensing
          #and a polynomial equation from excel
-         jck_area = ((-38.589 * jckkm3^2) + (82.796 * jckkm3) + 64.25),
+         jck.area.km2 = ((-38.589 * jck.km3^2) + (82.796 * jck.km3) + 64.25),
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m")))|> 
   #Grouping by year and month
   group_by(year, month) |> 
   #Filtering the summer months
   filter(month >= 5 & month < 10) |> 
-  reframe(jck.af = mean(jck_af),
-          vol.change = last(jck_af) - first(jck_af),
-          jck_area = mean(jck_area))
+  reframe(jck.km3 = mean(jck.km3),
+          #Will be used to calculate more accurate on-lake precipitation amounts
+          jck_area.km2 = mean(jck.area.km2)) %>% 
+  ungroup() %>% 
+  mutate(vol.change.km3 = jck.km3 - lag(jck.km3, default = jck.km3[1]))
 
 #Calling the lake data
 JL_YSI_sur <- read_csv('~/Documents/Data/Lake_YSI/2023_YSI.csv',show_col_types = FALSE) |>
@@ -91,14 +92,15 @@ JL_YSI_sur <- read_csv('~/Documents/Data/Lake_YSI/2023_YSI.csv',show_col_types =
 stream_ysi <- read_csv("~/Documents/Data/Trib_YSI/YSI.Tribs.csv") |> 
   subset(select = -c(Time, mmHg, DOPC, Domg.l, SALPPT, ORPmV, Notes, C, SP.C, pH, Date.Adj, Sample.ID)) %>% 
   mutate(date = as.Date(date, format = "%m/%d/%Y"),
-         Temp = as.numeric(Temp),
+         Temp.c = as.numeric(Temp),
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m")))
 #Calling dam outlet 
 lake.outlet.ysi <- stream_ysi %>% 
   filter(Setting == "Lake.Outlet") %>% 
   group_by(Event) %>% 
-  mutate(Temp = mean(Temp)) %>% 
+  mutate(Temp.c = mean(Temp.c),
+         lake.temp.k = as.numeric(Temp.c) + 273.15) %>% 
   distinct()
 
 #Calling the penman data calculated using Wetbud, may need to do this by hand to account for differing albedos
@@ -119,31 +121,7 @@ JL_YSI_sur$Event <- NA
 JL_YSI_sur$Event[JL_YSI_sur$Event == 2] <- 7
 JL_YSI_sur$Event[JL_YSI_sur$Event == 4] <- 8
 JL_YSI_sur$Event[JL_YSI_sur$Event == 6] <- 9
-# #Creating a column a month column and linking it to the Event column
-# JL_YSI_sur$month <- NA
-# JL_YSI_sur$month[JL_YSI_sur$Event == 7] <- 7
-# JL_YSI_sur$month[JL_YSI_sur$Event == 8] <- 8
-# JL_YSI_sur$month[JL_YSI_sur$Event == 9] <- 9
-# bor.monthly$Event <- NA
-## Creating an event column based off the month and year. 
-# jack.airport.monthly$Event <- NA
-# bor.releases$Event <- NA
-# et$Event <- NA
-# bor.monthly$Event[bor.monthly$month == 5 & bor.monthly$year == 2023] <- 7
-# bor.monthly$Event[bor.monthly$month == 8 & bor.monthly$year == 2023] <- 8
-# bor.monthly$Event[bor.monthly$month == 9 & bor.monthly$year == 2023] <- 9
-# bor.monthly$Event[bor.monthly$month == 7 & bor.monthly$year == 2023] <- 7
-# bor.monthly$Event[bor.monthly$month == 8 & bor.monthly$year == 2023] <- 8
-# bor.monthly$Event[bor.monthly$month == 9 & bor.monthly$year == 2023] <- 9
-# et$Event[et$month == 7 & et$year == 2023] <- 7
-# et$Event[et$month == 8 & et$year == 2023] <- 8
-# et$Event[et$month == 9 & et$year == 2023] <- 9
-# bor.releases$Event[bor.releases$month == 7 & bor.releases$year == 2023] <- 7
-# bor.releases$Event[bor.releases$month == 8 & bor.releases$year == 2023] <- 8
-# bor.releases$Event[bor.releases$month == 9 & bor.releases$year == 2023] <- 9
-# jack.airport.monthly$Event[jack.airport.monthly$month == 7 & jack.airport.monthly$year == 2023] <- 7
-# jack.airport.monthly$Event[jack.airport.monthly$month == 8 & jack.airport.monthly$year == 2023] <- 8
-# jack.airport.monthly$Event[jack.airport.monthly$month == 9 & jack.airport.monthly$year == 2023] <- 9
+
 ####Need to work on####
 ####Lake area and volume calculation####
 #importing in BoR data
@@ -217,8 +195,6 @@ lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") 
   distinct() |> 
   merge(lake.outlet.ysi) |> 
   merge(bor.releases) |>
-  mutate(Temp = as.numeric(Temp),
-         lake.temp.k = as.numeric(Temp) + 273.15) |> 
   merge(bor.monthly) |> 
   merge(jack.airport.monthly) |> 
   merge(OPIC) |>
