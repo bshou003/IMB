@@ -24,12 +24,12 @@ bor.releases <- read.csv("~/Documents/Data/Chapter.3/bor.dam.releases/bor.dam.re
          #converting volume from acre-foot to km3
          jck.km3 = jck_af * 1.23348e-6,
          #calculating the percentage full Jackson lake is 
-         jck.per = jck_af / (847000 * 1.23348e-6),
+         jck.per = jck.km3 / (847000 * 1.23348e-6),
          #Calculating lake surface area from the relationship developed from remote sensing
          #and a polynomial equation from excel
          jck.area.km2 = ((-38.589 * jck.km3^2) + (82.796 * jck.km3) + 64.25),
-         #jackson lake releases
-         jck_qd = jck_qd,
+         #jackson lake releases from cfs to m3d
+         jck.dam.rel.m3d = jck_qd * 60 * 60 * 24 * 0.0283168,
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m")))
 
@@ -48,7 +48,7 @@ bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.txt")
          #area of jackson lake km2
          jck.area.km2 = jck.area.km2,
          #jackson lake dam releases cfs to m3d
-         jck.dam.rel.m3d = jck_qd * 60 * 60 * 24 * 0.0283168, 
+         jck.dam.rel.m3d = jck.dam.rel.m3d , 
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m"))) |> 
   subset(select = -c(date)) |>
@@ -374,8 +374,8 @@ trib.dis.iso.sum  <- trib.discharge %>%
 
 #jack.lake.area <- 1.03366e+8 #meters
 lake.outlet <- lake.outlet %>% 
-  mutate(prcp.bor.area.18o = prcp.bor.dam.area * deltaprcpo,
-         prcp.bor.area.2h = prcp.bor.dam.area * deltaprcph) %>%  
+  mutate(prcp.bor.area.18o = prcp.bor.m3 * deltaprcpo,
+         prcp.bor.area.2h = prcp.bor.m3 * deltaprcph) %>%  
   merge(upper.snake.river.monthly) %>% 
   merge(trib.dis.iso.sum)
 #2016#
