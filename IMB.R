@@ -65,7 +65,7 @@ bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.txt")
   #Filtering the summer months
   filter(month >= 5 & month < 10)%>% 
   ungroup() %>% 
-  mutate(vol.change.km3 = jck.km3 - lag(jck.km3, default = jck.km3[1]))
+  mutate(vol.change.m3 = (jck.km3 - lag(jck.km3, default = jck.km3[1])) * 1e+9)
 
 #Calling upper snake precipitation which will allow me to apply a theisen approach to rainfall amounts of Jackson Lake
 upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.snake.river.precip.csv") |> 
@@ -147,49 +147,6 @@ et <- read_csv("~/Documents/Data/Chapter.3/Weather/jackson_penman.csv") %>%
 # lake.outlet.ysi$Event[lake.outlet.ysi$Event == 2] <- 7
 # lake.outlet.ysi$Event[lake.outlet.ysi$Event == 4] <- 8
 # lake.outlet.ysi$Event[lake.outlet.ysi$Event == 6] <- 9
-
-####Need to work on####
-####Lake area and volume calculation####
-#importing in BoR data
-# bor.volume  <- read.csv("~/Documents/Data/Chapter.3/bor.dam.releases/bor.elevtation.volume.2013.2024.txt",sep = "\t") %>% 
-#   #mutating DateTime column to date
-#   mutate(DateTime = ymd(DateTime),
-#          #converting acre-feet to km3
-#          jck_km3 = jck_af * 1.23348e-6)
-# #Importing in the remote sensed area data from seintel
-# sent.area  <- read.csv("~/Documents/Data/Chapter.3/bor.dam.releases/GEE/sentienel2/lake.area.sentinel2.csv") %>% 
-#   #converting date to date
-#   summarise(DateTime = ymd(date),
-#             #converting from chr to numeric
-#          area.km2 = as.double(area.km2)) %>% 
-# #removing Nas
-#     na.omit()
-# #Merging the two above dataframes
-# all.df <- bor.volume %>% 
-#   merge(sent.area)
-# write_csv(all.df,"~/Documents/Data/Chapter.3/bor.dam.releases/GEE/sentienel2/volume.area.csv")
-# #Reordering the data to ensure the model works well
-# all.df <- all.df[order(all.df$jck_km3),]
-# 
-# #PLotting the raw data to estimate the nls parameters
-# ggplot() +
-#   geom_point(data=all.df, aes(x = jck_km3, y = area.km2))
-# 
-# #Setting the inital parameters
-# Asym <- 100 ; resp0 <- 75 ; lrc <- 4; c0 <- 0.1
-# #Constructing the asympotic model
-# model <- nls(area.km2 ~ SSasympOff(jck_km3, Asym, lrc, c0), data = all.df)
-# #Print the model
-# summary(model)
-# #Creating a data.frame with a sequence of values for volumer
-# volume <- data.frame(seq(from =0.1, to = 1.40, length = 147)) %>% 
-#   #renaming the column
-#   rename(volume = "seq.from...0.1..to...1.4..length...147.")
-# 
-# #Creating a column and predicting lake areas
-# volume$predict <- predict(model, newdata = volume$volume)
-# plot(all.df$jck_km3,all.df$area.km2)
-# points(volume$volume,volume$predict, col = "green")
 
 ####Calling Isotope Data####
 #OPIC (precipitation) data, Gabe Bowen isoscapes https://wateriso.utah.edu/waterisotopes/index.html
@@ -375,15 +332,16 @@ trib.dis.iso.sum  <- trib.discharge %>%
 #jack.lake.area <- 1.03366e+8 #meters
 lake.outlet <- lake.outlet %>% 
   mutate(prcp.bor.area.18o = prcp.bor.m3 * deltaprcpo,
-         prcp.bor.area.2h = prcp.bor.m3 * deltaprcph) %>%  
+         prcp.bor.area.2h = prcp.bor.m3 * deltaprcph,
+         prcp.bor.m3 = prcp.bor.m3) %>%  
   merge(upper.snake.river.monthly) %>% 
   merge(trib.dis.iso.sum)
 #2016#
 #U refers to the streams, P is precipitation and is the overlake precipitaiton amount, R is snake river inflow
 lake.outlet$deltaHinput <- (lake.outlet$sumd2h.t + lake.outlet$prcp.bor.area.2h + lake.outlet$month.dis.2h.r)  / 
-  (lake.outlet$prcp.bor.dam.area + lake.outlet$sum.dis.t + lake.outlet$month.dis.r) 
+  (lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r) 
 lake.outlet$deltaOinput <- (lake.outlet$sumd18o.t + lake.outlet$prcp.bor.area.18o+ lake.outlet$month.dis.18o.r)  / 
-  (lake.outlet$prcp.bor.dam.area + lake.outlet$sum.dis.t + lake.outlet$month.dis.r)
+  (lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r)
 
 #calculation of m and delta star 2016#
 lake.outlet$m2 <- (lake.outlet$Hn - 10^-3 *((lake.outlet$ekh + lake.outlet$ehplus)/lake.outlet$a2hplus)) / 
@@ -447,31 +405,19 @@ bor.monthly.dam.discharge.month  <- read.csv("~/Documents/Data/Chapter.3/bor.dam
   distinct()
 
 
-# lake.volume.change.july.2023 <- bor.monthly.dam.discharge.month %>% 
-#   filter(year == 2023 & month ==7) %>%
-#   subset(select = c(year, month, day, jck_af)) %>% 
-#   summarise(year = year,
-#             month = month,
-#             jck_af = last(jck_af - first(jck_af))) %>% 
-#   distinct()
-# 
-# lake.volume.change.august.2023 <- bor.monthly.dam.discharge.month %>% 
-#   filter(year == 2023 & month ==8) %>%
-#   subset(select = c(year, month, day, jck_af)) %>% 
-#   summarise(year = year,
-#             month = month,
-#             jck_af = last(jck_af - first(jck_af))) %>% 
-#   distinct()
-
-
-
-
+t <- lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r - lake.outlet$jck.dam.rel.m3d + lake.outlet$vol.change.m3 
 #Evaporation#
-lake.outlet.2016$deltaevaph <- (((lake.outlet.2016$d2H*lake.outlet.2016$a2hplus)-(lake.outlet.2016$Hn*lake.outlet.2016$deltaatmoh3)
-                                 -lake.outlet.2016$ehplus-lake.outlet.2016$ekh)/((1-lake.outlet.2016$Hn) + (lake.outlet.2016$ekh/10^3)))
+lake.outlet$deltaevaph <- (((lake.outlet$d2H*lake.outlet$a2hplus)-(lake.outlet$Hn*lake.outlet$deltaatmoh3)
+                                 -lake.outlet$ehplus-lake.outlet$ekh)/((1-lake.outlet$Hn) + (lake.outlet$ekh/10^3)))
 #oxygen
-lake.outlet.2016$deltaevapo <- (((lake.outlet.2016$d18O*lake.outlet.2016$a18oplus)-(lake.outlet.2016$Hn*lake.outlet.2016$deltaatmoo3)
-                                 -lake.outlet.2016$eoplus-lake.outlet.2016$eko)/((1-lake.outlet.2016$Hn) + (lake.outlet.2016$eko/10^3)))
+lake.outlet$deltaevapo <- (((lake.outlet$d18O*lake.outlet$a18oplus)-(lake.outlet$Hn*lake.outlet$deltaatmoo3)
+                                 -lake.outlet$eoplus-lake.outlet$eko)/((1-lake.outlet$Hn) + (lake.outlet$eko/10^3)))
+
+
+####Jasechko 2014####
+lake.outlet$evap <- (lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput- lake.outlet$d18O)/ 
+                                   (lake.outlet$deltaevapo - lake.outlet$deltaOinput)) )  + lake.outlet$vol.change.m3 
+lake.outlet$evap.mm <- (lake.outlet$evap * 100) / (lake.outlet$jck.area.km2*1000000)
 
 
 gio <- ((lake.outlet.2016$prcp.bor.area.2h + lake.outlet.2016$deltaHinput - (lake.outlet.2016$deltaevaph * jack.lake.area * lake.outlet.2016$et) - 
@@ -534,18 +480,6 @@ lake.outlet$ei2 <- (lake.outlet$d2H - lake.outlet$deltaHinput) / (lake.outlet$m2
 
 ((lake.outlet$prcp.bor.dam.area + trib.dis.iso.sum$sum.dis + upper.snake.river.monthly$month.dis) * lake.outlet$ei18)/jack.lake.area
 
-
-
-####Isotopic values of evaporation####
-#evaportation delta value for hydrogen, deltalake is the lake isotope value, estar is equilibrium seperation, ah2/a18o is the frationation factor, deltaatmo is the atmospheric delta value, Hn is the normalized relative humidity, ek is kinetic seperation factor.
-#hydrogen
-lake.outlet$deltaevaph <- ((((lake.outlet$d2H-lake.outlet$estarh)/lake.outlet$a2h)-(lake.outlet$Hn*lake.outlet$deltaatmoh)-lake.outlet$ekh)/
-                             (1-lake.outlet$Hn + (lake.outlet$ekh*10^-3)))
-#oxygen
-
-lake.outlet$deltaevapo <- ((((lake.outlet$d18O-lake.outlet$estaro)/lake.outlet$a18o)-(lake.outlet$Hn*lake.outlet$deltaatmoo)-lake.outlet$eko)/
-                             ((1-lake.outlet$Hn) + (lake.outlet$eko*10^-3)))
-
-
+ 
 ####Jasechko 2014####
 evap <- lake.outlet.2016$month.dis * ((lake.outlet.2016$deltaOinput- lake.outlet.2016$d18O)/ (lake.outlet.2016$deltaevapo - lake.outlet.2016$deltaOinput))    
