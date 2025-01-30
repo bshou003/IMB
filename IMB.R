@@ -258,6 +258,9 @@ lake.outlet$deltaevaph4 <- (((lake.outlet$d2H*lake.outlet$a2hplus)-(lake.outlet$
 lake.outlet$deltaevapo4 <- (((lake.outlet$d18O*lake.outlet$a18oplus)-(lake.outlet$Hn*lake.outlet$deltaatmoo4)
                             -lake.outlet$eoplus-lake.outlet$eko)/((1-lake.outlet$Hn) + (lake.outlet$eko/10^3)))
 
+lake.outlet <- lake.outlet %>% 
+  mutate(evap.dxs = deltaevaph4 - (8 * deltaevapo4))
+
 isotopic.variables <- lake.outlet %>% 
   subset(select = c(Event, year, month,a2hplus,a18oplus,ehplus,eoplus,ekh,eko,deltaatmoh1,deltaatmoo1, deltaatmoh2,deltaatmoo2,deltaatmoh3,deltaatmoo4 ,deltaevaph1,
                     deltaevapo1,deltaevaph2,deltaevapo2,deltaevaph3,deltaevapo3,deltaevaph4,deltaevapo4))
@@ -304,7 +307,7 @@ upper.snake.river.monthly <- upper.snake.river.monthly %>%
   merge(river) %>% #merging to isotope data
   mutate(month.dis.18o.r = month.dis.r * d18O,
          month.dis.2h.r = month.dis.r * d2H,
-         dxs.r = dxs) %>% 
+         dxs.r = dxs * month.dis.r) %>% 
   select(subset = -c(SITE,d18O,d2H,dxs))
 
 #Calling in the trib discharge from rTop.
@@ -322,13 +325,15 @@ trib.discharge <- read.csv("~/Documents/Data/Chapter.3/rTop/rtop/rtop.discharge.
 trib.dis.iso.sum  <- trib.discharge %>% 
   merge(stream.isotopes) %>% 
   mutate(dis.18O.t = dis * d18O * 60 * 60 * 24, #m3s to m3d
-         dis.2H.t = dis * d2H * 60 * 60 * 24) %>%  #m3s to m3d 
+         dis.2H.t = dis * d2H * 60 * 60 * 24,
+         dis.dxs.t = dis * dxs * 60 *60 *24) %>%  #m3s to m3d 
   group_by(Event) %>% 
   reframe(Event = Event,
           sum.dis.t = sum(dis) * 60 * 60 * 24, #m3s to m3d
           sum.disv.t = sum(disv)* 60 * 60 * 24, #m3s to m3d
           sumd18o.t = sum(dis.18O.t),
-          sumd2h.t = sum(dis.2H.t)) %>% 
+          sumd2h.t = sum(dis.2H.t),
+          sum.dxs.t = sum(dis.dxs.t)) %>% 
   distinct()
 
 lake.outlet <- lake.outlet %>% 
@@ -336,7 +341,8 @@ lake.outlet <- lake.outlet %>%
          prcp.bor.area.2h = prcp.bor.m3 * deltaprcph,
          prcp.bor.m3 = prcp.bor.m3) %>%  
   merge(upper.snake.river.monthly) %>% 
-  merge(trib.dis.iso.sum)
+  merge(trib.dis.iso.sum) %>% 
+  mutate(dsxs.tr = (sum.dxs.t + dxs.r)/(sum.dis.t + month.dis.r))
 
 ####Inputs averaging####
 #U refers to the streams, P is precipitation and is the overlake precipitation amount, R is snake river inflow
@@ -385,28 +391,9 @@ lake.outlet$ei183 <- (lake.outlet$d18O-lake.outlet$deltaOinput)/((lake.outlet$m1
 lake.outlet$ei24 <- (lake.outlet$d2H-lake.outlet$deltaHinput)/((lake.outlet$m2 *(lake.outlet$deltastarh4-lake.outlet$d2H)))
 lake.outlet$ei184 <- (lake.outlet$d18O-lake.outlet$deltaOinput)/((lake.outlet$m18 *(lake.outlet$deltastaro4-lake.outlet$d18O)))
 
+####dxs E/I ####
+ei <- ((((lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs - lake.outlet$dxs))*
+  ((lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r)))/(lake.outlet$jck.area.km2* 1000000))*100
 
-####Gathering Outputs####
-#Parameters to call USGS data below the dam
-siteid =c("13011000")
-parameter = "00060"
-start = "2022-05-01"
-end = "2024-08-31"
-#Calling the USGS data
-snake.river.dam <- strmcall(siteid, parameter, start, end)
+g <-  (lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r) - lake.outlet$jck.dam.rel.m3d
 
-snake.river.dam.monthly <- snake.river.dam %>% 
-  mutate(year = as.numeric(format(Date, format = "%Y")),
-         month = as.numeric(format(Date, format = "%m")),
-         day = as.numeric(format(Date, format = "%d")),
-         SITE = 1) %>% 
-  group_by(month, year) %>% 
-  mutate(month.dis = sum(X_00060_00003) *  0.0283168 * 60 *60 *24) %>% 
-  select(subset = -c(agency_cd,site_no,Date,X_00060_00003,X_00060_00003_cd, day)) %>% 
-  distinct()
-snake.river.dam.monthly$Event <- NA
-snake.river.dam.monthly$Event[snake.river.dam.monthly$month == 7 & snake.river.dam.monthly$year == 2023] <- 7
-snake.river.dam.monthly$Event[snake.river.dam.monthly$month == 8 & snake.river.dam.monthly$year == 2023] <- 8
-snake.river.dam.monthly$Event[snake.river.dam.monthly$month == 9 & snake.river.dam.monthly$year == 2023] <- 9
-lake.outlet.2016 <- lake.outlet.2016 %>% 
-  merge(snake.river.dam.monthly)
