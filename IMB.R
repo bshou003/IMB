@@ -83,6 +83,22 @@ upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.s
   mutate(prcp.m = sum(prcp.m)) |> 
   distinct()
 
+#Isotope Precipitation from Yellowstone
+prcip.iso <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/precipitation.isotopes/yellowstone_precip_iso.csv") %>% 
+  subset(select = c(Start_Date, Collection_Date, d2H, d18O)) %>% 
+  mutate(Start_Date = as.Date(Start_Date),
+         Collection_Date = as.Date(Collection_Date),
+         year = as.numeric(format(Collection_Date, format = "%Y")),
+         month = as.numeric(format(Collection_Date, format = "%m"))) %>% 
+  group_by(month) %>% 
+  subset(select = -c(Start_Date, Collection_Date)) %>% 
+  reframe(month=month,
+          d2H.p = mean(d2H),
+         d18O.p =  mean(d18O),
+         dxs.p = d2H.p - (8*d18O.p)) %>%
+  ungroup() %>% 
+  distinct()
+
 # #Calling the lake data, Currently not using the lake data, commenting out
 # JL_YSI_sur <- read_csv('~/Documents/Data/Lake_YSI/2023_YSI.csv',show_col_types = FALSE) |>
 #   mutate(DATE = as.Date(DATE, "%m/%d/%Y")) |>   #Calling the YSI data for site JL1-JL16
@@ -121,7 +137,8 @@ et <- read_csv("~/Documents/Data/Chapter.3/Weather/jackson_penman.csv") %>%
 
 monthly.weather.dam.releases <- lake.outlet.ysi |> 
 merge(bor.monthly) |> 
-  merge(jack.airport.monthly)
+  merge(jack.airport.monthly) %>% 
+  merge(prcip.iso)
 write.csv(monthly.weather.dam.releases, "~/Documents/Data/Chapter.3/IMB/variables.data.tables/monthly.weather.dam.releases")
 ## Changing the event name from the YSI into the events that match my labeling scheme
 # lake.outlet.ysi$Event <- NA
@@ -131,16 +148,25 @@ write.csv(monthly.weather.dam.releases, "~/Documents/Data/Chapter.3/IMB/variable
 
 ####Calling Isotope Data####
 #OPIC (precipitation) data, Gabe Bowen isoscapes https://wateriso.utah.edu/waterisotopes/index.html
-OPIC <- read_csv("~/Documents/Data/Chapter.3/Isotope.Data/OPIC.Data.csv") |>
-  rename(month = MONTH)
+# OPIC <- read_csv("~/Documents/Data/Chapter.3/Isotope.Data/OPIC.Data.csv") |>
+#   rename(month = MONTH)
 
-gw <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
-  filter(Setting.Type == "AMK Tap") |> 
-  group_by(Event) %>% 
-  mutate(d18Og = mean(d18O),
-         d2Hg = mean(d2H),
-         dxg = mean(dxs)) %>% 
-  subset(select = -c(d18O, d2H, SITE,seq_position, Setting.Type,ON, dxs)) %>% 
+# gw <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
+#   filter(Setting.Type == "AMK Tap") |> 
+#   group_by(Event) %>% 
+#   mutate(d18Og = mean(d18O),
+#          d2Hg = mean(d2H),
+#          dxg = mean(dxs)) %>% 
+#   subset(select = -c(d18O, d2H, SITE,seq_position, Setting.Type,ON, dxs)) %>% 
+#   distinct()
+
+lake.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |>
+  filter(Setting.Type == "Lake") %>% 
+  group_by(Event, month, year) %>% 
+  mutate(d18O.l = mean(d18O),
+         d2H.l = mean(d2H),
+         dxs.l = mean(dxs)) %>% 
+  subset(select = c(Event, d18O.l, d2H.l, dxs.l, month, year)) %>% 
   distinct()
 
 
@@ -176,8 +202,9 @@ lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") 
   merge(lake.outlet.ysi) |> 
   #merge(bor.releases) |>
   merge(bor.monthly) |> 
-  merge(jack.airport.monthly) |> 
-  merge(OPIC) #|>
+  merge(jack.airport.monthly)%>% 
+  merge(prcip.iso)
+  #merge(OPIC) #|>
   # merge(gw) |>
   # ET doesn't contain 2024, temporarily removed
   #merge(et)
@@ -226,19 +253,19 @@ lake.outlet$ekh <- theta * ck2H * (1-lake.outlet$Hn)
 lake.outlet$eko <- theta * ck18O * (1-lake.outlet$Hn)
 ####Atmospheric Isotope Values####
 #deltaprcp is the delta value of the precipitationfrom Gabe Bowens precipitation map, and eplus is the equilibrium separation calculated from above#oxygen 
-lake.outlet$deltaatmoh1 <- (lake.outlet$deltaprcph - lake.outlet$ehplus)     
-lake.outlet$deltaatmoo1 <- (lake.outlet$deltaprcpo - lake.outlet$eoplus)
+lake.outlet$deltaatmoh1 <- (lake.outlet$d2H.p - lake.outlet$ehplus)     
+lake.outlet$deltaatmoo1 <- (lake.outlet$d18O.p - lake.outlet$eoplus)
 
-lake.outlet$deltaatmoh2 <- (lake.outlet$deltaprcph - (log10(lake.outlet$a2hplus) * 1000))  
-lake.outlet$deltaatmoo2 <- (lake.outlet$deltaprcpo - (log10(lake.outlet$a18oplus) * 1000))
+lake.outlet$deltaatmoh2 <- (lake.outlet$d2H.p - (log10(lake.outlet$a2hplus) * 1000))  
+lake.outlet$deltaatmoo2 <- (lake.outlet$d18O.p - (log10(lake.outlet$a18oplus) * 1000))
 
-lake.outlet$deltaatmoh3 <- (lake.outlet$deltaprcph - lake.outlet$ehplus)/(lake.outlet$a2hplus)  
-lake.outlet$deltaatmoo3 <- (lake.outlet$deltaprcpo - lake.outlet$eoplus)/(lake.outlet$a18oplus) 
+lake.outlet$deltaatmoh3 <- (lake.outlet$d2H.p - lake.outlet$ehplus)/(lake.outlet$a2hplus)  
+lake.outlet$deltaatmoo3 <- (lake.outlet$d18O.p - lake.outlet$eoplus)/(lake.outlet$a18oplus) 
 
 k = 0.5 #Suggested for highly seasonal climates Gibson (2015)
 #k is a value that ranges from 0.5 (higly seasonal)-1 (non-seasonal) (Gibson (2015))
-lake.outlet$deltaatmoh4 <- (lake.outlet$deltaprcph - (k * lake.outlet$ehplus))/(1+(10^-3*k*lake.outlet$ehplus))  
-lake.outlet$deltaatmoo4 <- (lake.outlet$deltaprcpo - (k * lake.outlet$eoplus))/(1+(10^-3*k*lake.outlet$eoplus)) 
+lake.outlet$deltaatmoh4 <- (lake.outlet$d2H.p - (k * lake.outlet$ehplus))/(1+(10^-3*k*lake.outlet$ehplus))  
+lake.outlet$deltaatmoo4 <- (lake.outlet$d18O.p - (k * lake.outlet$eoplus))/(1+(10^-3*k*lake.outlet$eoplus)) 
 
 #Evaporation#
 lake.outlet$deltaevaph1 <- (((lake.outlet$d2H*lake.outlet$a2hplus)-(lake.outlet$Hn*lake.outlet$deltaatmoh1)
@@ -259,7 +286,10 @@ lake.outlet$deltaevapo4 <- (((lake.outlet$d18O*lake.outlet$a18oplus)-(lake.outle
                             -lake.outlet$eoplus-lake.outlet$eko)/((1-lake.outlet$Hn) + (lake.outlet$eko/10^3)))
 
 lake.outlet <- lake.outlet %>% 
-  mutate(evap.dxs = deltaevaph4 - (8 * deltaevapo4))
+  mutate(evap.dxs1 = deltaevaph1 - (8 * deltaevapo1),
+         evap.dxs2 = deltaevaph2 - (8 * deltaevapo2),
+         evap.dxs3 = deltaevaph3 - (8 * deltaevapo3),
+         evap.dxs4 = deltaevaph4 - (8 * deltaevapo4))
 
 isotopic.variables <- lake.outlet %>% 
   subset(select = c(Event, year, month,a2hplus,a18oplus,ehplus,eoplus,ekh,eko,deltaatmoh1,deltaatmoo1, deltaatmoh2,deltaatmoo2,deltaatmoh3,deltaatmoo4 ,deltaevaph1,
@@ -337,12 +367,13 @@ trib.dis.iso.sum  <- trib.discharge %>%
   distinct()
 
 lake.outlet <- lake.outlet %>% 
-  mutate(prcp.bor.area.18o = prcp.bor.m3 * deltaprcpo,
-         prcp.bor.area.2h = prcp.bor.m3 * deltaprcph,
-         prcp.bor.m3 = prcp.bor.m3) %>%  
+  mutate(prcp.bor.area.18o = prcp.bor.m3 * d18O.p,
+         prcp.bor.area.2h = prcp.bor.m3 * d2H.p,
+         prcp.bor.m3 = prcp.bor.m3,
+         prcp.area.dxs = dxs.p * prcp.bor.m3) %>%  
   merge(upper.snake.river.monthly) %>% 
   merge(trib.dis.iso.sum) %>% 
-  mutate(dsxs.tr = (sum.dxs.t + dxs.r)/(sum.dis.t + month.dis.r))
+  mutate(dsxs.tr = (sum.dxs.t + dxs.r + dxs.p)/(sum.dis.t + month.dis.r +prcp.bor.m3))
 
 ####Inputs averaging####
 #U refers to the streams, P is precipitation and is the overlake precipitation amount, R is snake river inflow
@@ -391,11 +422,42 @@ lake.outlet$ei183 <- (lake.outlet$d18O-lake.outlet$deltaOinput)/((lake.outlet$m1
 lake.outlet$ei24 <- (lake.outlet$d2H-lake.outlet$deltaHinput)/((lake.outlet$m2 *(lake.outlet$deltastarh4-lake.outlet$d2H)))
 lake.outlet$ei184 <- (lake.outlet$d18O-lake.outlet$deltaOinput)/((lake.outlet$m18 *(lake.outlet$deltastaro4-lake.outlet$d18O)))
 
-####dxs E/I ####
-ei <- ((((lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs - lake.outlet$dxs))*
-  ((lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r)))/(lake.outlet$jck.area.km2* 1000000))*100
 
-g <-  (lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r) - lake.outlet$jck.dam.rel.m3d
+####dxs E/I ####
+lake.outlet$eid1 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs1 - lake.outlet$dxs)
+lake.outlet$eid2 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs2 - lake.outlet$dxs)
+lake.outlet$eid3 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs3 - lake.outlet$dxs)
+lake.outlet$eid4 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs4 - lake.outlet$dxs)
+
+lake.outlet$evaph1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - lake.outlet$d2H)/ 
+                                                       (lake.outlet$deltaevaph1-lake.outlet$deltaHinput))
+lake.outlet$evapo1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput - lake.outlet$d18O)/ 
+                                                       (lake.outlet$deltaevapo1-lake.outlet$deltaOinput))
+
+lake.outlet$evaph2 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - lake.outlet$d2H)/ 
+                                                       (lake.outlet$deltaevaph2-lake.outlet$deltaHinput))
+lake.outlet$evapo2 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput - lake.outlet$d18O)/ 
+                                                       (lake.outlet$deltaevapo1-lake.outlet$deltaOinput))
+
+lake.outlet$evaph3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - lake.outlet$d2H)/ 
+                                                       (lake.outlet$deltaevaph3-lake.outlet$deltaHinput))
+lake.outlet$evapo3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput - lake.outlet$d18O)/ 
+                                                       (lake.outlet$deltaevapo3-lake.outlet$deltaOinput))
+lake.outlet$evaph4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - lake.outlet$d2H)/ 
+                                                       (lake.outlet$deltaevaph4-lake.outlet$deltaHinput))
+lake.outlet$evapo4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput - lake.outlet$d18O)/ 
+                                                       (lake.outlet$deltaevapo4-lake.outlet$deltaOinput))
+
+lake.outlet$evapd1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs1-lake.outlet$dsxs.tr))
+lake.outlet$evapd2 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs2-lake.outlet$dsxs.tr))
+lake.outlet$evapd3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs3-lake.outlet$dsxs.tr))
+lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs4-lake.outlet$dsxs.tr))
+
+
 
 lake.outlet.longer <- lake.outlet %>% 
 subset(select = -c(month, year)) %>% 
