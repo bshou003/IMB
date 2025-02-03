@@ -140,13 +140,13 @@ gw <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |>
   mutate(d18Og = mean(d18O),
          d2Hg = mean(d2H),
          dxg = mean(dxs)) %>% 
-  subset(select = -c(d18O, d2H, SITE,seq_position, Setting.Type,on,Original_name, location,dxs)) %>% 
+  subset(select = -c(d18O, d2H, SITE,seq_position, Setting.Type,ON, dxs)) %>% 
   distinct()
 
 
 stream.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
   filter(Setting.Type == "Stream" | Setting.Type == "River") |> 
-  subset(select = -c(seq_position, Setting.Type,on,Original_name, location)) |> 
+  subset(select = -c(seq_position, Setting.Type,ON)) |> 
   filter(SITE != "26W" & SITE != "26E" & SITE != "15.7" & SITE != "1.7" & SITE != "34.700000000000003") %>%
   group_by(Event, SITE) %>% 
   mutate(d18O = mean(d18O),
@@ -165,7 +165,7 @@ river <- stream.isotopes %>%
 
 lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
   filter(Setting.Type == "Lake.outlet") |> 
-  subset(select = -c(SITE,seq_position, Setting.Type, on, Original_name, location)) |> 
+  subset(select = -c(SITE,seq_position, Setting.Type, ON)) |> 
   group_by(Event) |>
   arrange(Event) |>
   #Several samples were analyzed multiple times, these are averaged to simplify
@@ -397,3 +397,19 @@ ei <- ((((lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs - lake.ou
 
 g <-  (lake.outlet$prcp.bor.m3 + lake.outlet$sum.dis.t + lake.outlet$month.dis.r) - lake.outlet$jck.dam.rel.m3d
 
+lake.outlet.longer <- lake.outlet %>% 
+subset(select = -c(month, year)) %>% 
+  pivot_longer(- Event, names_to = "variables", values_to = "values")
+  
+ggplot(lake.outlet.longer, aes(x=variables, y=values))+
+  geom_boxplot()+
+  facet_wrap(~variables,  scales = "free_y")
+
+t <- t %>% 
+  mutate(id = rownames(t),
+         event = col
+
+
+t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet.longer[,1])
+ggplot()+
+  geom_boxplot(data = t)
