@@ -99,6 +99,7 @@ prcip.iso <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/precipitation.iso
   ungroup() %>% 
   distinct()
 
+et.thorn <- read.csv("~/Documents/Data/Chapter.3/IMB/variables.data.tables/et.thorn")
 # #Calling the lake data, Currently not using the lake data, commenting out
 # JL_YSI_sur <- read_csv('~/Documents/Data/Lake_YSI/2023_YSI.csv',show_col_types = FALSE) |>
 #   mutate(DATE = as.Date(DATE, "%m/%d/%Y")) |>   #Calling the YSI data for site JL1-JL16
@@ -159,15 +160,29 @@ write.csv(monthly.weather.dam.releases, "~/Documents/Data/Chapter.3/IMB/variable
 #          dxg = mean(dxs)) %>% 
 #   subset(select = -c(d18O, d2H, SITE,seq_position, Setting.Type,ON, dxs)) %>% 
 #   distinct()
-
-lake.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |>
-  filter(Setting.Type == "Lake") %>% 
-  group_by(Event, month, year) %>% 
-  mutate(d18O.l = mean(d18O),
-         d2H.l = mean(d2H),
-         dxs.l = mean(dxs)) %>% 
-  subset(select = c(Event, d18O.l, d2H.l, dxs.l, month, year)) %>% 
-  distinct()
+#Calling voronoi areas
+#vaall <- read.csv("~/Documents/Data/Chapter.3/IMB/variables.data.tables/voronoi_areas/vaall")
+#Calling Lake isotopes
+# lake.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |>
+#   filter(Setting.Type == "Lake") %>% 
+#   group_by(Event, month, year, SITE ) %>% 
+#   mutate(d18O.l = mean(d18O),
+#          d2H.l = mean(d2H),
+#          dxs.l = mean(dxs)) %>% 
+#   subset(select = c(Event, d18O.l, d2H.l, dxs.l, month, year, SITE)) %>% 
+#   distinct() %>% 
+#   merge(vaall)
+# 
+# lake.iso.weighted <- lake.isotopes %>% 
+#   mutate(d18O.l = d18O.l * v.area.m2,
+#          d2H.l = d2H.l * v.area.m2,
+#          dxs.l = dxs.l * v.area.m2) %>% 
+#   group_by(Event) %>% 
+#   reframe(Event = Event,
+#             d18O.l = sum(d18O.l)/sum(v.area.m2),
+#             d2H.l = sum(d2H.l)/sum(v.area.m2),
+#             dxs.l = sum(dxs.l)/sum(v.area.m2)) %>% 
+#   distinct()
 
 
 stream.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
@@ -203,7 +218,9 @@ lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") 
   #merge(bor.releases) |>
   merge(bor.monthly) |> 
   merge(jack.airport.monthly)%>% 
-  merge(prcip.iso)
+  merge(prcip.iso) %>%
+  merge(et.thorn)
+  #merge(lake.iso.weighted)
   #merge(OPIC) #|>
   # merge(gw) |>
   # ET doesn't contain 2024, temporarily removed
@@ -458,6 +475,8 @@ lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake
                                                        (lake.outlet$evap.dxs4-lake.outlet$dsxs.tr))
 
 
+rt <- lake.outlet$eid3 * ((lake.outlet$jck.km3 * 1000000000)/(lake.outlet$jck.area.km2 * 1000000* lake.outlet$et.m.tw))
+
 
 lake.outlet.longer <- lake.outlet %>% 
 subset(select = -c(month, year)) %>% 
@@ -467,6 +486,11 @@ ggplot(lake.outlet.longer, aes(x=variables, y=values))+
   geom_boxplot()+
   facet_wrap(~variables,  scales = "free_y")
 
+ggplot() +
+  geom_point(data = lake.outlet, aes(x = eid3, y = prcp.bor.m3))
+ggplot() +
+  geom_point(data = lake.outlet, aes(x = eid3, y = jck.area.km2))
+
 t <- t %>% 
   mutate(id = rownames(t),
          event = col
@@ -475,3 +499,6 @@ t <- t %>%
 t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet.longer[,1])
 ggplot()+
   geom_boxplot(data = t)
+
+ggplot()+
+  geom_point(data=lake.outlet, aes(x=jck.dam.rel.m3d, y=month.dis.r))
