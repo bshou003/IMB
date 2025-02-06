@@ -500,5 +500,401 @@ t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet
 ggplot()+
   geom_boxplot(data = t)
 
+
 ggplot()+
   geom_point(data=lake.outlet, aes(x=jck.dam.rel.m3d, y=month.dis.r))
+
+
+#########Prcipitation vs discahrage and sampling time Upper Snake Gauge#####
+library(ggplot2)
+library(ggpubr)
+
+upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.snake.river.precip.csv") |> 
+  mutate(date = as.POSIXct(DATE),
+         prcp.m = PRCP * 0.254)
+
+bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv") |> 
+  mutate(prcp.m = jck_pp * 0.254)
+
+upper.snake.precip.month$dateTime <- with(upper.snake.precip.month,ymd(upper.snake.precip.month$DATE) + hms(upper.snake.precip.month$TIME))
+bor.monthly$dateTime <- with(bor.monthly,ymd(bor.monthly$DateTime) + hms(bor.monthly$time))
+
+event1 <- readNWISuv("13010065", "00060","2022-04-30", "2022-05-14")
+event2 <- readNWISuv("13010065", "00060","2022-06-03", "2022-06-18")
+event3 <- readNWISuv("13010065", "00060","2022-06-11", "2022-06-26")
+event4 <- readNWISuv("13010065", "00060","2022-06-30", "2022-07-15")
+event5 <- readNWISuv("13010065", "00060","2022-07-11", "2022-07-25")
+event6 <- readNWISuv("13010065", "00060","2022-08-14", "2022-08-29")
+event7 <- readNWISuv("13010065", "00060","2023-06-21", "2023-07-06")
+event8 <- readNWISuv("13010065", "00060","2023-08-07", "2023-08-22")
+event9 <- readNWISuv("13010065", "00060","2023-09-07", "2023-09-22")
+event10 <- readNWISuv("13010065", "00060","2024-06-03", "2024-06-18")
+event11 <- readNWISuv("13010065", "00060","2024-06-30", "2024-07-14")
+event12 <- readNWISuv("13010065", "00060","2024-08-02", "2024-08-17")
+e1p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-04-30'), as.Date('2022-05-14')))
+e2p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-06-03'), as.Date('2022-06-18')))
+e3p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-06-11'), as.Date('2022-06-26')))
+e4p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-06-30'), as.Date('2022-07-15')))
+e5p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-07-11'), as.Date('2022-07-25')))
+e6p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2022-08-14'), as.Date('2022-08-29')))
+e7p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2023-06-21'), as.Date('2023-07-06')))
+e8p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2023-08-07'), as.Date('2023-08-22')))
+e9p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2023-09-07'), as.Date('2023-09-22')))
+e10p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2024-06-03'), as.Date('2024-06-18')))
+e11p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2024-06-30'), as.Date('2024-07-14')))
+e12p <- upper.snake.precip.month %>% 
+  filter(between(date, as.Date('2024-08-02'), as.Date('2024-08-17')))
+
+
+d1 <- ggplot()+
+  geom_line(data = (event1), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-05-13 00:00:00")))
+d2 <- ggplot()+
+  geom_line(data = (event2), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-17 15:45:00")))
+d3 <- ggplot()+
+  geom_line(data = (event3), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-25 11:00:00")))
+d4 <- ggplot()+
+  geom_line(data = (event4), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-14 14:45:00")))
+d5 <- ggplot()+
+  geom_line(data = (event5), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-24 15:30:00")))
+d6 <- ggplot()+
+  geom_line(data = (event6), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-08-28 10:00:00")))
+d7 <- ggplot()+
+  geom_line(data = (event7), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")))
+d8 <- ggplot()+
+  geom_line(data = (event8), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")))
+d9 <- ggplot()+
+  geom_line(data = (event9), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-09-21 17:45:00")))
+d10 <- ggplot()+
+  geom_line(data = (event10), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-06-17 19:45:00")))
+d11 <- ggplot()+
+  geom_line(data = (event11), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-07-13 18:45:00")))
+d12 <- ggplot()+
+  geom_line(data = (event12), aes(x = dateTime, y = X_00060_00000))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")))
+
+
+
+coeff <- 0.0001
+
+e1 <- ggplot() +
+  geom_line(data = event1, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e1p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+  )+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-05-13 00:00:00")), color = "red")
+
+e2 <- ggplot() +
+  geom_line(data = event2, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e2p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+  )+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-17 15:45:00")), color = "red")
+
+e3 <- ggplot() +
+  geom_line(data = event3, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e3p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-25 11:00:00")), color = "red")
+
+e4 <- ggplot() +
+  geom_line(data = event4, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e4p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-14 14:45:00")), color = "red")
+
+e5 <- ggplot() +
+  geom_line(data = event5, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e5p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))   +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-24 15:30:00")), color = "red")
+
+e6 <- ggplot() +
+  geom_line(data = event6, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e6p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-08-28 10:00:00")), color = "red")
+
+e7 <- ggplot() +
+  geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e7p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
+
+e8 <- ggplot() +
+  geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e8p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
+
+e9 <- ggplot() +
+  geom_line(data = event9, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e9p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-09-21 17:45:00")), color = "red")
+
+e10 <- ggplot() +
+  geom_line(data = event10, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e10p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-06-17 19:45:00")), color = "red")
+
+e11 <- ggplot() +
+  geom_line(data = event11, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e11p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-07-13 18:45:00")), color = "red")
+
+e12 <- ggplot() +
+  geom_line(data = event12, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e12p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")), color = "red")
+
+ggarrange(e1, e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 4, align = 'h')
+ggarrange(e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 2, align = 'h')
+
+#########Prcipitation vs discahrage and sampling time BOR#####
+bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv") |> 
+  mutate(prcp.m = jck_pp * 0.254,
+         DateTime= as.POSIXct(DateTime))
+
+bor.monthly$dateTime <- with(bor.monthly,ymd(bor.monthly$DateTime) + hms(bor.monthly$time))
+
+event1 <- readNWISuv("13010065", "00060","2022-04-30", "2022-05-14")
+event2 <- readNWISuv("13010065", "00060","2022-06-03", "2022-06-18")
+event3 <- readNWISuv("13010065", "00060","2022-06-11", "2022-06-26")
+event4 <- readNWISuv("13010065", "00060","2022-06-30", "2022-07-15")
+event5 <- readNWISuv("13010065", "00060","2022-07-11", "2022-07-25")
+event6 <- readNWISuv("13010065", "00060","2022-08-14", "2022-08-29")
+event7 <- readNWISuv("13010065", "00060","2023-06-21", "2023-07-06")
+event8 <- readNWISuv("13010065", "00060","2023-08-07", "2023-08-22")
+event9 <- readNWISuv("13010065", "00060","2023-09-07", "2023-09-22")
+event10 <- readNWISuv("13010065", "00060","2024-06-03", "2024-06-18")
+event11 <- readNWISuv("13010065", "00060","2024-06-30", "2024-07-14")
+event12 <- readNWISuv("13010065", "00060","2024-08-02", "2024-08-17")
+e1p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-04-30'), as.Date('2022-05-14')))
+e2p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-06-03'), as.Date('2022-06-18')))
+e3p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-06-11'), as.Date('2022-06-26')))
+e4p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-06-30'), as.Date('2022-07-15')))
+e5p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-07-11'), as.Date('2022-07-25')))
+e6p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2022-08-14'), as.Date('2022-08-29')))
+e7p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2023-06-21'), as.Date('2023-07-06')))
+e8p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2023-08-07'), as.Date('2023-08-22')))
+e9p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2023-09-07'), as.Date('2023-09-22')))
+e10p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2024-06-03'), as.Date('2024-06-18')))
+e11p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2024-06-30'), as.Date('2024-07-14')))
+e12p <- bor.monthly %>% 
+  filter(between(DateTime, as.Date('2024-08-02'), as.Date('2024-08-17')))
+
+coeff <- 0.0001
+
+e1 <- ggplot() +
+  geom_line(data = event1, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e1p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+  )+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-05-13 00:00:00")), color = "red")
+
+e2 <- ggplot() +
+  geom_line(data = event2, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e2p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+  )+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-17 15:45:00")), color = "red")
+
+e3 <- ggplot() +
+  geom_line(data = event3, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e3p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-25 11:00:00")), color = "red")
+
+e4 <- ggplot() +
+  geom_line(data = event4, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e4p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-14 14:45:00")), color = "red")
+
+e5 <- ggplot() +
+  geom_line(data = event5, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e5p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))   +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-24 15:30:00")), color = "red")
+
+e6 <- ggplot() +
+  geom_line(data = event6, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e6p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2022-08-28 10:00:00")), color = "red")
+
+e7 <- ggplot() +
+  geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e7p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
+
+e8 <- ggplot() +
+  geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e8p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
+
+e9 <- ggplot() +
+  geom_line(data = event9, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e9p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-09-21 17:45:00")), color = "red")
+
+e10 <- ggplot() +
+  geom_line(data = event10, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e10p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-06-17 19:45:00")), color = "red")
+
+e11 <- ggplot() +
+  geom_line(data = event11, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e11p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-07-13 18:45:00")), color = "red")
+
+e12 <- ggplot() +
+  geom_line(data = event12, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_segment(data = e12p, aes(x= dateTime, yend = prcp.m/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the first axis
+    name = "First Axis",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
+  geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")), color = "red")
+
+ggarrange(e1, e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 4, align = 'h')
+ggarrange(e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 2, align = 'h')
+
+
+
+
+
