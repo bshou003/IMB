@@ -896,5 +896,8 @@ ggarrange(e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 2, align = 'h')
 
 
 
+plot(e8)
 
-
+ggplot() +
+  geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
