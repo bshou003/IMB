@@ -358,10 +358,12 @@ upper.snake.river.monthly <- upper.snake.river.monthly %>%
   select(subset = -c(SITE,d18O,d2H,dxs))
 
 #Calling in the trib discharge from rTop.
-trib.discharge <- read.csv("~/Documents/Data/Chapter.3/rTop/rtop/rtop.discharge.estimates.csv")%>% 
-  mutate(Date = as.Date(Date),
-         year = as.numeric(format(Date, format = "%Y")),
-         month = as.numeric(format(Date, format = "%m"))) %>% 
+trib.discharge <- read.csv("~/Documents/Data/Chapter.3/rTop/rtop/20250213_Processing/discharge_estimates.csv")%>% 
+  separate(date, c("month", "year")) %>% 
+  mutate(year = as.numeric(format(year, format = "%Y")),
+         month = as.numeric(format(month, format = "%m")),
+         dis = pred * area,
+         disv = var * var) %>% 
   rename(SITE = id) 
 #Adding event data based on year and month
 # trib.discharge$Event <- NA
@@ -374,7 +376,8 @@ trib.dis.iso.sum  <- trib.discharge %>%
   mutate(dis.18O.t = dis * d18O * 60 * 60 * 24, #m3s to m3d
          dis.2H.t = dis * d2H * 60 * 60 * 24,
          dis.dxs.t = dis * dxs * 60 *60 *24) %>%  #m3s to m3d 
-  group_by(Event) %>% 
+  filter(SITE != 3 & Event != 8 | SITE !=3 & Event !=9) %>% 
+  group_by(Event) %>%
   reframe(Event = Event,
           sum.dis.t = sum(dis) * 60 * 60 * 24, #m3s to m3d
           sum.disv.t = sum(disv)* 60 * 60 * 24, #m3s to m3d
@@ -729,20 +732,20 @@ bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv")
 
 bor.monthly$dateTime <- with(bor.monthly,ymd(bor.monthly$DateTime) + hms(bor.monthly$time))
 
-event1 <- readNWISuv("13010065", "00060","2022-04-30", "2022-05-14")
+event1 <- readNWISuv("13010065", "00060","2022-05-03", "2022-05-14")
 event2 <- readNWISuv("13010065", "00060","2022-06-03", "2022-06-18")
 event3 <- readNWISuv("13010065", "00060","2022-06-11", "2022-06-26")
 event4 <- readNWISuv("13010065", "00060","2022-06-30", "2022-07-15")
 event5 <- readNWISuv("13010065", "00060","2022-07-11", "2022-07-25")
-event6 <- readNWISuv("13010065", "00060","2022-08-14", "2022-08-29")
-event7 <- readNWISuv("13010065", "00060","2023-06-21", "2023-07-06")
-event8 <- readNWISuv("13010065", "00060","2023-08-07", "2023-08-22")
-event9 <- readNWISuv("13010065", "00060","2023-09-07", "2023-09-22")
+event6 <- readNWISuv("13010065", "00060","2022-08-24", "2022-08-29")
+event7 <- readNWISuv("13010065", "00060","2023-07-01", "2023-07-06")
+event8 <- readNWISuv("13010065", "00060","2023-08-18", "2023-08-22")
+event9 <- readNWISuv("13010065", "00060","2023-09-17", "2023-09-22")
 event10 <- readNWISuv("13010065", "00060","2024-06-03", "2024-06-18")
 event11 <- readNWISuv("13010065", "00060","2024-06-30", "2024-07-14")
-event12 <- readNWISuv("13010065", "00060","2024-08-02", "2024-08-17")
+event12 <- readNWISuv("13010065", "00060","2024-08-12", "2024-08-17")
 e1p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2022-04-30'), as.Date('2022-05-14')))
+  filter(between(DateTime, as.Date('2022-05-03'), as.Date('2022-05-14')))
 e2p <- bor.monthly %>% 
   filter(between(DateTime, as.Date('2022-06-03'), as.Date('2022-06-18')))
 e3p <- bor.monthly %>% 
@@ -752,19 +755,19 @@ e4p <- bor.monthly %>%
 e5p <- bor.monthly %>% 
   filter(between(DateTime, as.Date('2022-07-11'), as.Date('2022-07-25')))
 e6p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2022-08-14'), as.Date('2022-08-29')))
+  filter(between(DateTime, as.Date('2022-08-24'), as.Date('2022-08-29')))
 e7p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2023-06-21'), as.Date('2023-07-06')))
+  filter(between(DateTime, as.Date('2023-07-01'), as.Date('2023-07-06')))
 e8p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2023-08-07'), as.Date('2023-08-22')))
+  filter(between(DateTime, as.Date('2023-08-18'), as.Date('2023-08-22')))
 e9p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2023-09-07'), as.Date('2023-09-22')))
+  filter(between(DateTime, as.Date('2023-09-17'), as.Date('2023-09-22')))
 e10p <- bor.monthly %>% 
   filter(between(DateTime, as.Date('2024-06-03'), as.Date('2024-06-18')))
 e11p <- bor.monthly %>% 
   filter(between(DateTime, as.Date('2024-06-30'), as.Date('2024-07-14')))
 e12p <- bor.monthly %>% 
-  filter(between(DateTime, as.Date('2024-08-02'), as.Date('2024-08-17')))
+  filter(between(DateTime, as.Date('2024-08-12'), as.Date('2024-08-17')))
 
 coeff <- 0.001
 
@@ -891,12 +894,23 @@ e12 <- ggplot() +
   geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")), color = "red")
 
 ggarrange(e1, e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 4, align = 'h')
-ggarrange(e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 2, align = 'h')
+ggarrange(e1, e6, e7, e8,e9,e12, ncol = 3, nrow = 2, align = 'h')
 
 
+####Calculating isotope value pre-event rain####
+start_longterm <- as.POSIXct("2023-07-03 00:00:00",tz = "UTC")
+end_longterm <- as.POSIXct("2023-07-06 00:00:00",tz = "UTC")
+event7 <- readNWISuv("13010065", "00060","2023-07-03", "2023-07-06") %>% 
+  filter(between(dateTime, start_longterm, end_longterm)) %>% 
+  mutate(count = seq(1:nrow(event7)))
 
-plot(e8)
-
-ggplot() +
-  geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
+e7 <- ggplot() +
+  geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
+  #geom_segment(data = e7p, aes(x= dateTime, yend = jck_pp/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the discharge (cfs)
+    name = "discharge (cfs)",
+    # Add a rainfall (in) and specify its features
+    #sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
+  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
+e7
