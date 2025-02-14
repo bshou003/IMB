@@ -496,7 +496,7 @@ ggplot() +
 
 t <- t %>% 
   mutate(id = rownames(t),
-         event = col
+         event = col)
 
 
 t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet.longer[,1])
@@ -514,7 +514,7 @@ library(ggpubr)
 
 upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.snake.river.precip.csv") |> 
   mutate(date = as.POSIXct(DATE),
-         prcp.m = PRCP * 0.254)
+         prcp.mm = PRCP * 25.4)
 
 bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv") |> 
   mutate(prcp.m = jck_pp * 0.254)
@@ -522,18 +522,30 @@ bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv")
 upper.snake.precip.month$dateTime <- with(upper.snake.precip.month,ymd(upper.snake.precip.month$DATE) + hms(upper.snake.precip.month$TIME))
 bor.monthly$dateTime <- with(bor.monthly,ymd(bor.monthly$DateTime) + hms(bor.monthly$time))
 
-event1 <- readNWISuv("13010065", "00060","2022-04-30", "2022-05-14")
-event2 <- readNWISuv("13010065", "00060","2022-06-03", "2022-06-18")
-event3 <- readNWISuv("13010065", "00060","2022-06-11", "2022-06-26")
-event4 <- readNWISuv("13010065", "00060","2022-06-30", "2022-07-15")
-event5 <- readNWISuv("13010065", "00060","2022-07-11", "2022-07-25")
-event6 <- readNWISuv("13010065", "00060","2022-08-14", "2022-08-29")
-event7 <- readNWISuv("13010065", "00060","2023-06-21", "2023-07-06")
-event8 <- readNWISuv("13010065", "00060","2023-08-07", "2023-08-22")
-event9 <- readNWISuv("13010065", "00060","2023-09-07", "2023-09-22")
-event10 <- readNWISuv("13010065", "00060","2024-06-03", "2024-06-18")
-event11 <- readNWISuv("13010065", "00060","2024-06-30", "2024-07-14")
-event12 <- readNWISuv("13010065", "00060","2024-08-02", "2024-08-17")
+event1 <- readNWISuv("13010065", "00060","2022-04-30", "2022-05-14") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event2 <- readNWISuv("13010065", "00060","2022-06-03", "2022-06-18") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event3 <- readNWISuv("13010065", "00060","2022-06-11", "2022-06-26") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event4 <- readNWISuv("13010065", "00060","2022-06-30", "2022-07-15") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event5 <- readNWISuv("13010065", "00060","2022-07-11", "2022-07-25") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event6 <- readNWISuv("13010065", "00060","2022-08-14", "2022-08-29") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event7 <- readNWISuv("13010065", "00060","2023-06-21", "2023-07-06") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event8 <- readNWISuv("13010065", "00060","2023-08-07", "2023-08-22") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event9 <- readNWISuv("13010065", "00060","2023-09-07", "2023-09-22") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event10 <- readNWISuv("13010065", "00060","2024-06-03", "2024-06-18") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event11 <- readNWISuv("13010065", "00060","2024-06-30", "2024-07-14") %>% 
+  mutate(X_00060_00000 * 0.0283168)
+event12 <- readNWISuv("13010065", "00060","2024-08-02", "2024-08-17") %>% 
+  mutate(X_00060_00000 * 0.0283168)
 e1p <- upper.snake.precip.month %>% 
   filter(between(date, as.Date('2022-04-30'), as.Date('2022-05-14')))
 e2p <- upper.snake.precip.month %>% 
@@ -608,9 +620,9 @@ e1 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")
   )+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-05-13 00:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-05-13 00:00:00")), color = "red")
 
 e2 <- ggplot() +
   geom_line(data = event2, aes(x = dateTime, y=X_00060_00000)) + 
@@ -619,9 +631,9 @@ e2 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")
   )+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-17 15:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-06-17 15:45:00")), color = "red")
 
 e3 <- ggplot() +
   geom_line(data = event3, aes(x = dateTime, y=X_00060_00000)) + 
@@ -630,8 +642,8 @@ e3 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-25 11:00:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)"))+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-06-25 11:00:00")), color = "red")
 
 e4 <- ggplot() +
   geom_line(data = event4, aes(x = dateTime, y=X_00060_00000)) + 
@@ -640,8 +652,8 @@ e4 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-14 14:45:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-07-14 14:45:00")), color = "red")
 
 e5 <- ggplot() +
   geom_line(data = event5, aes(x = dateTime, y=X_00060_00000)) + 
@@ -650,8 +662,8 @@ e5 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis"))   +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-24 15:30:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)"))   +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-07-24 15:30:00")), color = "red")
 
 e6 <- ggplot() +
   geom_line(data = event6, aes(x = dateTime, y=X_00060_00000)) + 
@@ -660,8 +672,8 @@ e6 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-08-28 10:00:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-08-28 10:00:00")), color = "red")
 
 e7 <- ggplot() +
   geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
@@ -670,8 +682,8 @@ e7 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00")), color = "red")
 
 e8 <- ggplot() +
   geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
@@ -680,8 +692,8 @@ e8 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-08-21 20:45:00")), color = "red")
 
 e9 <- ggplot() +
   geom_line(data = event9, aes(x = dateTime, y=X_00060_00000)) + 
@@ -690,8 +702,8 @@ e9 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-09-21 17:45:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-09-21 17:45:00")), color = "red")
 
 e10 <- ggplot() +
   geom_line(data = event10, aes(x = dateTime, y=X_00060_00000)) + 
@@ -700,8 +712,8 @@ e10 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-06-17 19:45:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-06-17 19:45:00")), color = "red")
 
 e11 <- ggplot() +
   geom_line(data = event11, aes(x = dateTime, y=X_00060_00000)) + 
@@ -710,8 +722,8 @@ e11 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-07-13 18:45:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)")) +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-07-13 18:45:00")), color = "red")
 
 e12 <- ggplot() +
   geom_line(data = event12, aes(x = dateTime, y=X_00060_00000)) + 
@@ -720,11 +732,112 @@ e12 <- ggplot() +
     # Features of the discharge (cfs)
     name = "discharge (cfs)",
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Second Axis"))+
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")), color = "red")
+    sec.axis = sec_axis(~.*coeff, name="rainfall (mm)"))+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-08-16 18:00:00")), color = "red")
 
 ggarrange(e1, e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 4, align = 'h')
-ggarrange(e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 2, align = 'h')
+ggarrange(e1, e6, e7, e8,e9,e12, ncol = 3, nrow = 2, align = 'h')
+
+
+####Calculating isotope value pre-event rain####
+#First I will calculate the slope pre-event rain
+start_longterm <- as.POSIXct("2023-07-03 00:00:00",tz = "UTC")
+end_longterm <- as.POSIXct("2023-07-04 00:45:00",tz = "UTC")
+event7 <- readNWISuv("13010065", "00060","2023-07-01", "2023-07-06") %>% 
+  filter(between(dateTime, start_longterm, end_longterm))
+event7 <- event7 %>% 
+  mutate(count = seq(1:nrow(event7)))
+#Fitting a linear model to pre-event rain. This allows me to estimate what the 
+linear_model <- lm(X_00060_00000 ~ count, data=event7) 
+cf <- coef(linear_model)
+
+event7 <- event7 %>% 
+  mutate(estimate_discharge = cf[1] - (cf[2] * count))
+
+#Start of rise in discharge
+rain_start <- as.POSIXct("2023-07-03 00:15:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2023-07-10 20:00:00",tz = "UTC")
+revent7 <- readNWISuv("13010065", "00060","2023-07-01", "2023-07-10") %>% 
+  filter(between(dateTime, rain_start, rain_end))
+revent7 <- revent7 %>% 
+  mutate(count = seq(1:nrow(revent7)), 
+         estimate_discharge = cf[1] + (cf[2] * count))
+
+re7 <- ggplot() +
+  geom_line(data = revent7, aes(x = dateTime, y=X_00060_00000)) + 
+  #geom_segment(data = e7p, aes(x= dateTime, yend = jck_pp/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the discharge (cfs)
+    name = "discharge (cfs)",
+    # Add a rainfall (in) and specify its features
+    sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
+   geom_line(data = revent7, aes(x = dateTime, y = estimate_discharge))+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00", tz="UTC")), color = "red")
+re7
+
+
+
+
+start_longterm <- as.POSIXct("2023-07-06 00:00:00",tz = "UTC")
+end_longterm <- as.POSIXct("2023-07-08 23:00:00",tz = "UTC")
+event7 <- readNWISuv("13010065", "00060","2023-07-06","2023-07-08" ) %>% 
+  filter(between(dateTime, start_longterm, end_longterm))
+event7 <- event7 %>% 
+  mutate(count = seq(1:nrow(event7)))
+#Fitting a linear model to pre-event rain. This allows me to estimate what the 
+linear_model <- lm(X_00060_00000 ~ count, data=event7) 
+cf <- coef(linear_model)
+event7 <- event7 %>% 
+  mutate(estimate_discharge = cf[1] + (cf[2] * count))
+e7 <- ggplot() +
+  geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
+  #geom_segment(data = e7p, aes(x= dateTime, yend = jck_pp/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the discharge (cfs)
+    name = "discharge (cfs)",
+    # Add a rainfall (in) and specify its features
+    sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
+  geom_line(data = event7, aes(x = dateTime, y = estimate_discharge))+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00", tz="UTC")), color = "red")
+e7
+
+
+#Start of rise in discharge
+rain_start <- as.POSIXct("2023-07-04 00:45:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2023-07-05 20:00:00",tz = "UTC")
+revent7 <- readNWISuv("13010065", "00060","2023-07-01", "2023-07-10") %>% 
+  filter(between(dateTime, rain_start, rain_end))
+revent7 <- revent7 %>% 
+  mutate(count = seq(1:nrow(revent7)), 
+         estimate_discharge = (cf[1] +110) + (cf[2] * count))
+
+re7 <- ggplot() +
+  geom_line(data = revent7, aes(x = dateTime, y=X_00060_00000)) + 
+  #geom_segment(data = e7p, aes(x= dateTime, yend = jck_pp/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
+  scale_y_continuous(
+    # Features of the discharge (cfs)
+    name = "discharge (cfs)",
+    # Add a rainfall (in) and specify its features
+    sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
+  geom_line(data = revent7, aes(x = dateTime, y = estimate_discharge))+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00", tz="UTC")), color = "red")
+re7
+
+
+
+sum(revent7$X_00060_00000)
+sum(revent7$estimate_discharge)
+
+
+
+
+
+
+
+
+
 
 #########Prcipitation vs discahrage and sampling time BOR#####
 bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.csv") |> 
@@ -780,7 +893,7 @@ e1 <- ggplot() +
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")
   )+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-05-13 00:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-05-13 00:00:00")), color = "red")
 
 e2 <- ggplot() +
   geom_line(data = event2, aes(x = dateTime, y=X_00060_00000)) + 
@@ -791,7 +904,7 @@ e2 <- ggplot() +
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")
   )+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-17 15:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-06-17 15:45:00")), color = "red")
 
 e3 <- ggplot() +
   geom_line(data = event3, aes(x = dateTime, y=X_00060_00000)) + 
@@ -801,7 +914,7 @@ e3 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)"))+
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-06-25 11:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-06-25 11:00:00")), color = "red")
 
 e4 <- ggplot() +
   geom_line(data = event4, aes(x = dateTime, y=X_00060_00000)) + 
@@ -811,7 +924,7 @@ e4 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-14 14:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-07-14 14:45:00")), color = "red")
 
 e5 <- ggplot() +
   geom_line(data = event5, aes(x = dateTime, y=X_00060_00000)) + 
@@ -821,7 +934,7 @@ e5 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)"))   +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-07-24 15:30:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-07-24 15:30:00")), color = "red")
 
 e6 <- ggplot() +
   geom_line(data = event6, aes(x = dateTime, y=X_00060_00000)) + 
@@ -831,7 +944,7 @@ e6 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2022-08-28 10:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2022-08-28 10:00:00")), color = "red")
 
 e7 <- ggplot() +
   geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
@@ -841,7 +954,7 @@ e7 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00")), color = "red")
 
 e8 <- ggplot() +
   geom_line(data = event8, aes(x = dateTime, y=X_00060_00000)) + 
@@ -851,7 +964,7 @@ e8 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-08-21 20:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-08-21 20:45:00")), color = "red")
 
 e9 <- ggplot() +
   geom_line(data = event9, aes(x = dateTime, y=X_00060_00000)) + 
@@ -861,7 +974,7 @@ e9 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-09-21 17:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2023-09-21 17:45:00")), color = "red")
 
 e10 <- ggplot() +
   geom_line(data = event10, aes(x = dateTime, y=X_00060_00000)) + 
@@ -871,7 +984,7 @@ e10 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-06-17 19:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-06-17 19:45:00")), color = "red")
 
 e11 <- ggplot() +
   geom_line(data = event11, aes(x = dateTime, y=X_00060_00000)) + 
@@ -881,7 +994,7 @@ e11 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-07-13 18:45:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-07-13 18:45:00")), color = "red")
 
 e12 <- ggplot() +
   geom_line(data = event12, aes(x = dateTime, y=X_00060_00000)) + 
@@ -891,26 +1004,8 @@ e12 <- ggplot() +
     name = "discharge (cfs)",
     # Add a rainfall (in) and specify its features
     sec.axis = sec_axis(~.*coeff, name="rainfall (in)"))+
-  geom_vline(xintercept = as.POSIXct(as.Date("2024-08-16 18:00:00")), color = "red")
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-08-16 18:00:00")), color = "red")
 
 ggarrange(e1, e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12, ncol = 3, nrow = 4, align = 'h')
 ggarrange(e1, e6, e7, e8,e9,e12, ncol = 3, nrow = 2, align = 'h')
 
-
-####Calculating isotope value pre-event rain####
-start_longterm <- as.POSIXct("2023-07-03 00:00:00",tz = "UTC")
-end_longterm <- as.POSIXct("2023-07-06 00:00:00",tz = "UTC")
-event7 <- readNWISuv("13010065", "00060","2023-07-03", "2023-07-06") %>% 
-  filter(between(dateTime, start_longterm, end_longterm)) %>% 
-  mutate(count = seq(1:nrow(event7)))
-
-e7 <- ggplot() +
-  geom_line(data = event7, aes(x = dateTime, y=X_00060_00000)) + 
-  #geom_segment(data = e7p, aes(x= dateTime, yend = jck_pp/ coeff, y=0),linewidth =2) + # Divide by 10 to get the same range than the temperature
-  scale_y_continuous(
-    # Features of the discharge (cfs)
-    name = "discharge (cfs)",
-    # Add a rainfall (in) and specify its features
-    #sec.axis = sec_axis(~.*coeff, name="rainfall (in)")) +
-  geom_vline(xintercept = as.POSIXct(as.Date("2023-07-05 20:00:00")), color = "red")
-e7
