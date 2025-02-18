@@ -393,7 +393,7 @@ lake.outlet <- lake.outlet %>%
          prcp.area.dxs = dxs.p * prcp.bor.m3) %>%  
   merge(upper.snake.river.monthly) %>% 
   merge(trib.dis.iso.sum) %>% 
-  mutate(dsxs.tr = (sum.dxs.t + dxs.r + dxs.p)/(sum.dis.t + month.dis.r +prcp.bor.m3))
+  mutate(dxsinput = (sum.dxs.t + dxs.r + dxs.p)/(sum.dis.t + month.dis.r +prcp.bor.m3))
 
 ####Inputs averaging####
 #U refers to the streams, P is precipitation and is the overlake precipitation amount, R is snake river inflow
@@ -444,10 +444,10 @@ lake.outlet$ei184 <- (lake.outlet$d18O-lake.outlet$deltaOinput)/((lake.outlet$m1
 
 
 ####dxs E/I ####
-lake.outlet$eid1 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs1 - lake.outlet$dxs)
-lake.outlet$eid2 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs2 - lake.outlet$dxs)
-lake.outlet$eid3 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs3 - lake.outlet$dxs)
-lake.outlet$eid4 <- (lake.outlet$dsxs.tr - lake.outlet$dxs)/(lake.outlet$evap.dxs4 - lake.outlet$dxs)
+lake.outlet$eid1 <- (lake.outlet$dxsinput - lake.outlet$dxs)/(lake.outlet$evap.dxs1 - lake.outlet$dxs)
+lake.outlet$eid2 <- (lake.outlet$dxsinput - lake.outlet$dxs)/(lake.outlet$evap.dxs2 - lake.outlet$dxs)
+lake.outlet$eid3 <- (lake.outlet$dxsinput - lake.outlet$dxs)/(lake.outlet$evap.dxs3 - lake.outlet$dxs)
+lake.outlet$eid4 <- (lake.outlet$dxsinput - lake.outlet$dxs)/(lake.outlet$evap.dxs4 - lake.outlet$dxs)
 
 lake.outlet$evaph1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - lake.outlet$d2H)/ 
                                                        (lake.outlet$deltaevaph1-lake.outlet$deltaHinput))
@@ -468,43 +468,26 @@ lake.outlet$evaph4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaHinput - 
 lake.outlet$evapo4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$deltaOinput - lake.outlet$d18O)/ 
                                                        (lake.outlet$deltaevapo4-lake.outlet$deltaOinput))
 
-lake.outlet$evapd1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
-                                                       (lake.outlet$evap.dxs1-lake.outlet$dsxs.tr))
-lake.outlet$evapd2 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
-                                                       (lake.outlet$evap.dxs2-lake.outlet$dsxs.tr))
-lake.outlet$evapd3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
-                                                       (lake.outlet$evap.dxs3-lake.outlet$dsxs.tr))
-lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dsxs.tr - lake.outlet$dxs)/ 
-                                                       (lake.outlet$evap.dxs4-lake.outlet$dsxs.tr))
+lake.outlet$evapd1 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs1-lake.outlet$dxsinput))
+lake.outlet$evapd2 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs2-lake.outlet$dxsinput))
+lake.outlet$evapd3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs3-lake.outlet$dxsinput))
+lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lake.outlet$dxs)/ 
+                                                       (lake.outlet$evap.dxs4-lake.outlet$dxsinput))
+
+(lake.outlet$evaph3 * 1000) / (lake.outlet$jck.area.km2 * 1000000)
 
 
 rt <- lake.outlet$eid3 * ((lake.outlet$jck.km3 * 1000000000)/(lake.outlet$jck.area.km2 * 1000000* lake.outlet$et.m.tw))
 
 
 lake.outlet.longer <- lake.outlet %>% 
-subset(select = -c(month, year)) %>% 
-  pivot_longer(- Event, names_to = "variables", values_to = "values")
-  
-ggplot(lake.outlet.longer, aes(x=variables, y=values))+
-  geom_boxplot()+
-  facet_wrap(~variables,  scales = "free_y")
-
-ggplot() +
-  geom_point(data = lake.outlet, aes(x = eid3, y = prcp.bor.m3))
-ggplot() +
-  geom_point(data = lake.outlet, aes(x = eid3, y = jck.area.km2))
-
-t <- t %>% 
-  mutate(id = rownames(t),
-         event = col)
+subset(select = -c(month, year))
 
 
 t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet.longer[,1])
-ggplot()+
-  geom_boxplot(data = t)
 
-
-ggplot()+
-  geom_point(data=lake.outlet, aes(x=jck.dam.rel.m3d, y=month.dis.r))
 
 
