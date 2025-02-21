@@ -477,7 +477,7 @@ lake.outlet$evapd3 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lak
 lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lake.outlet$dxs)/ 
                                                        (lake.outlet$evap.dxs4-lake.outlet$dxsinput))
 
-(lake.outlet$evaph3 * 1000) / (lake.outlet$jck.area.km2 * 1000000)
+lake.outlet$k <- (lake.outlet$evapd3 * 1000) / (lake.outlet$jck.area.km2 * 1000000)
 
 
 rt <- lake.outlet$eid3 * ((lake.outlet$jck.km3 * 1000000000)/(lake.outlet$jck.area.km2 * 1000000* lake.outlet$et.m.tw))
