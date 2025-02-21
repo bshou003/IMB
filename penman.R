@@ -39,7 +39,7 @@ nsrdb.solar <- nsrdb.solar.2022 %>%
 jack.airport  <- jack.airport %>% 
   merge(nsrdb.solar) %>% 
   filter(Month >=5 & Month <= 9)
-#FOR MIN AND MAX TEMP NEED TO PULL OUT FOR EACH DAY
+#Need to ensure columns line up with penman.parameters3
 amkmm <- read.csv("~/Documents/Data/Chapter.3/Weather/2024_Onset.csv", skip = 1) %>% 
   rename(dateTime = Date.Time..GMT.06.00,
          par = PAR..µmol.m..s..LGR.S.N..10077818..SEN.S.N..689846.,
