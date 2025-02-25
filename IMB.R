@@ -44,6 +44,7 @@ bor.monthly  <- read.csv("~/Documents/Data/Chapter.3/Weather/BoR.2022.2024.txt")
          air.temp.k = (jck_mm-32)/(9/5) + 273.15,#temp in kelvin
          #jackson lake volume km3
          jck.km3 = jck.km3,
+         #Calculating the percentage of lake full
          jck.per = jck.per,
          #area of jackson lake km2
          jck.area.km2 = jck.area.km2,
@@ -85,13 +86,16 @@ upper.snake.precip.month <- read.csv("~/Documents/Data/Chapter.3/Weather/upper.s
 
 #Isotope Precipitation from Yellowstone
 prcip.iso <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/precipitation.isotopes/yellowstone_precip_iso.csv") %>% 
+  #Subseting the information needed
   subset(select = c(Start_Date, Collection_Date, d2H, d18O)) %>% 
+  #Converting date to as.Date
   mutate(Start_Date = as.Date(Start_Date),
          Collection_Date = as.Date(Collection_Date),
          year = as.numeric(format(Collection_Date, format = "%Y")),
          month = as.numeric(format(Collection_Date, format = "%m"))) %>% 
   group_by(month) %>% 
   subset(select = -c(Start_Date, Collection_Date)) %>% 
+  #Multiple measurements a month, just averaging the measurements
   reframe(month=month,
           d2H.p = mean(d2H),
          d18O.p =  mean(d18O),
@@ -99,7 +103,6 @@ prcip.iso <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/precipitation.iso
   ungroup() %>% 
   distinct()
 
-et.thorn <- read.csv("~/Documents/Data/Chapter.3/IMB/variables.data.tables/et.thorn")
 # #Calling the lake data, Currently not using the lake data, commenting out
 # JL_YSI_sur <- read_csv('~/Documents/Data/Lake_YSI/2023_YSI.csv',show_col_types = FALSE) |>
 #   mutate(DATE = as.Date(DATE, "%m/%d/%Y")) |>   #Calling the YSI data for site JL1-JL16
@@ -114,27 +117,17 @@ et.thorn <- read.csv("~/Documents/Data/Chapter.3/IMB/variables.data.tables/et.th
 
 #Calling lake outlet data
 lake.outlet.ysi <- read_csv("~/Documents/Data/Trib_YSI/YSI.Tribs.csv") |> 
+  #Calling only lake.outlet data
   filter(Setting == "Lake.Outlet") %>%
   group_by(Event) %>% 
   mutate(date = as.Date(date, format = "%m/%d/%Y"),
-         lake.outlet.temp.c = mean(as.numeric(Temp)),#taking the mean because the first event is triplicated
+         #taking the mean because the first event is triplicated
+         lake.outlet.temp.c = mean(as.numeric(Temp)),
          year = as.numeric(format(date, format = "%Y")),
          month = as.numeric(format(date, format = "%m")),
          lake.outlet.temp.k = as.numeric(lake.outlet.temp.c) + 273.15)%>% 
   subset(select = c(year, month, lake.outlet.temp.c, lake.outlet.temp.k, Event)) %>% 
   distinct()
-
-#Calling the penman data calculated using Wetbud, may need to do this by hand to account for differing albedos
-#Limited to 2023 due to lack of solar data
-et <- read_csv("~/Documents/Data/Chapter.3/Weather/jackson_penman.csv") %>% 
-  mutate(date = as.Date(date),
-         year = as.numeric(format(date, format = "%Y")),
-         month = as.numeric(format(date, format = "%m"))) %>% 
-  group_by(month, year) %>%
-  #converting cm to m
-  summarise(et = sum(et.cm) / 100)|> 
-  #Filtering the summer months
-  filter(month >= 5 & month < 10)
 
 monthly.weather.dam.releases <- lake.outlet.ysi |> 
 merge(bor.monthly) |> 
@@ -184,24 +177,33 @@ write.csv(monthly.weather.dam.releases, "~/Documents/Data/Chapter.3/IMB/variable
 #             dxs.l = sum(dxs.l)/sum(v.area.m2)) %>% 
 #   distinct()
 
-
+#Calling the stream isotope data
 stream.isotopes <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
+  #Filtering by stream and river
   filter(Setting.Type == "Stream" | Setting.Type == "River") |> 
+  #Removing unused rows
   subset(select = -c(seq_position, Setting.Type,ON)) |> 
+  #Filtering out sites not used
   filter(SITE != "26W" & SITE != "26E" & SITE != "15.7" & SITE != "1.7" & SITE != "34.700000000000003") %>%
+  #grouping by event and site
   group_by(Event, SITE) %>% 
+  #Taking the average of values, there were triplicates in sample runs
   mutate(d18O = mean(d18O),
          d2H = mean(d2H),
          dxs = mean(dxs),
          SITE = as.numeric(SITE)) %>% 
+  #Keeping only distinct rows
   distinct()%>% 
+  #Subsetting just what I need
   subset(select = c(SITE, Event,d18O, d2H,dxs,month, year))
 
 #Creating a data frame for Upper Snake#
 river <- stream.isotopes %>% 
+  #Filtering the streams by just river
   filter(SITE == 15) %>% 
   mutate(Event = as.numeric(Event)) %>% 
   subset(select = c(SITE, Event,d18O, d2H,dxs,month, year)) %>% 
+  #Arranging in order by event since it was a character
   arrange(Event)
 
 lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
@@ -218,20 +220,18 @@ lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") 
   #merge(bor.releases) |>
   merge(bor.monthly) |> 
   merge(jack.airport.monthly)%>% 
-  merge(prcip.iso) %>%
-  merge(et.thorn)
+  merge(prcip.iso)
   #merge(lake.iso.weighted)
   #merge(OPIC) #|>
   # merge(gw) |>
-  # ET doesn't contain 2024, temporarily removed
-  #merge(et)
+
 #Have done this outside the previous bit of script, was getting NA's, but this works
 lake.outlet <- lake.outlet %>% 
   mutate(d18Olag = d18O - lag(d18O),
          d2Hlag = d2H - lag(d2H))
 
 rm(bor.monthly, bor.releases, jack.airport.monthly,OPIC, lake.outlet.ysi,et, gw, upper.snake.precip.month)
-####Fractionation Factors for both oxygen and hydrogen following Horita and Wesolowski (1994) & Majoube (1971), a 
+####Equilibrium Fractionation Factors for both oxygen and hydrogen following Horita and Wesolowski (1994) & Majoube (1971), a 
 #good description is presented in Gibson (2016) ####
 #Need to ensure excel/csv column name matches this script, temperature values need to be kelvin
 #From Mercer(2022)
@@ -241,6 +241,7 @@ lake.outlet$a18oplus <- exp(((1.137 * (10^6 / lake.outlet$lake.outlet.temp.k^2))
                                     (0.4156 * (10^3 / lake.outlet$lake.outlet.temp.k)) - 2.0667)/1000)
 
 ####Equilibrium Separation####
+#Equilibrium enrichment factor
 #Equilibrium Separation for hydrogen & oxygen using Fractionation Factor from Horita & Wesolowski (1994)
 lake.outlet$ehplus <- (lake.outlet$a2hplus -1) * 1000
 lake.outlet$eoplus <- (lake.outlet$a18oplus -1) * 1000 
@@ -266,6 +267,7 @@ ck18O <- 14.2
 ck2H <- 12.5
 
 #Kinetic Separation Factor
+#Kinetic factionation factor
 lake.outlet$ekh <- theta * ck2H * (1-lake.outlet$Hn)
 lake.outlet$eko <- theta * ck18O * (1-lake.outlet$Hn)
 ####Atmospheric Isotope Values####
@@ -342,6 +344,29 @@ upper.snake.river.monthly <- upper.snake.river.monthly %>%
   mutate(month.dis.r = sum(daily.total))%>%  #summing m3d by each month 
   select(subset = -c(agency_cd,site_no,Date,X_00060_00003,X_00060_00003_cd, day, daily.total)) %>% 
   distinct()
+
+####For June 2024####
+#June 2024 I don't have a full month worth of solar so I need to adjust the
+#inflow and outflow to account for that####
+#For all of June 2024
+# siteid ="13010065"
+# parameter = "00060"
+# start = "2024-06-01"
+# end = "2024-06-30"
+# #Calling USGS Data#
+# upper.snake.river.june <- strmcall(siteid, parameter, start, end) %>% 
+#   mutate(daily.total = X_00060_00003 * 24 * 60 * 60 * 0.0283168) %>%  #converting cfs to cfd then to m3d
+#   reframe(month.dis.r = sum(daily.total))
+# #For the part of the month I have solar
+# siteid ="13010065"
+# parameter = "00060"
+# start = "2024-06-20"
+# end = "2024-06-30"
+# #Calling USGS Data#
+# upper.snake.river.june.observed <- strmcall(siteid, parameter, start, end) %>% 
+#   mutate(daily.total = X_00060_00003 * 24 * 60 * 60 * 0.0283168) %>%  #converting cfs to cfd then to m3d
+#   reframe(month.dis.r = sum(daily.total))
+# 
 
 #Adding event data based on year and month
 # upper.snake.river.monthly$Event <- NA
@@ -478,7 +503,8 @@ lake.outlet$evapd4 <- lake.outlet$jck.dam.rel.m3d * ((lake.outlet$dxsinput - lak
                                                        (lake.outlet$evap.dxs4-lake.outlet$dxsinput))
 
 lake.outlet$k <- (lake.outlet$evapd3 * 1000) / (lake.outlet$jck.area.km2 * 1000000)
-
+et2024 <- lake.outlet %>% 
+  filter(year == 2024)
 
 rt <- lake.outlet$eid3 * ((lake.outlet$jck.km3 * 1000000000)/(lake.outlet$jck.area.km2 * 1000000* lake.outlet$et.m.tw))
 
@@ -486,8 +512,9 @@ rt <- lake.outlet$eid3 * ((lake.outlet$jck.km3 * 1000000000)/(lake.outlet$jck.ar
 lake.outlet.longer <- lake.outlet %>% 
 subset(select = -c(month, year))
 
-
+et.2024.longer <-  et2024 %>% 
+  subset(select = -c(month, year))
 t <- lake.outlet.longer[-1] %>% t() %>% as.data.frame() %>% setNames(lake.outlet.longer[,1])
-
+t2024 <- et.2024.longer[-1] %>% t() %>% as.data.frame() %>% setNames(et.2024.longer[,1])
 
 
