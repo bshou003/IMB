@@ -431,6 +431,7 @@ deltaHpre12 <- ((sum(revent12$X_00060_00000) * d2Hr) - ((sum(revent12$X_00060_00
   sum(revent12$estimate_discharge)
 
 prerain_river_iso <- data.frame(Event = c(7,8,9,12),
-                                d18Or = c(deltaOpre7,deltaOpre8,deltaOpre9,deltaOpre12),
-                                d2Hr = c(deltaHpre7,deltaHpre8,deltaHpre9,deltaHpre12))
+                                SITE = c(15,15,15,15),
+                                d18O = c(deltaOpre7,deltaOpre8,deltaOpre9,deltaOpre12),
+                                d2H = c(deltaHpre7,deltaHpre8,deltaHpre9,deltaHpre12))
 write_csv(prerain_river_iso, "~/Documents/Data/Chapter.3/Isotope.Data/prerain_river_iso.csv")
