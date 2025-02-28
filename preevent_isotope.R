@@ -152,15 +152,24 @@ dev.off()
 # I am calling data for event 7. 
 #For event 7 going post-sampling provides a better long-term signal.
 #Dates before June 30th are heavily influence by rain events
-event7 <- usgsdis("13010065", "00060","2023-06-29", "2023-07-20") 
-e7p <- precip(upper.snake.precip.month, '2023-06-29', '2023-07-20')
+event7 <- usgsdis("13010065", "00060","2023-06-15", "2023-07-20") 
+e7p <- precip(upper.snake.precip.month, '2023-06-15', '2023-07-20')
 e7 <- disprecipplot(event7, event7$dateTime, event7$X_00060_00000, e7p, e7p$dateTime, e7p$prcp.mm, .5,
                     bquote(Discharge (m^3/s)), "Precipitation (mm)", "2023-07-05 20:00:00")
 e7
+
+#Cutting the data to capture the long-term decline, 
+#The decline starts steeper thn mellows, will include some earlier time to incoporate
+#the steeper declines
+event7 <- usgsdis("13010065", "00060","2023-07-07", "2023-07-24") 
+e7p <- precip(upper.snake.precip.month, '2023-07-07', '2023-07-24')
+e7 <- disprecipplot(event7, event7$dateTime, event7$X_00060_00000, e7p, e7p$dateTime, e7p$prcp.mm, .5,
+                    bquote(Discharge (m^3/s)), "Precipitation (mm)", "2023-07-05 20:00:00")
+e7
+
 #Adding a count column to more easily run my linear model.
 event7 <- event7 %>% 
   mutate(count = seq(1:nrow(event7)))
-
 #Fitting a linear model to pre-event rain. This allows me to estimate what the 
 linear_model <- lm(X_00060_00000 ~ count, data=event7) 
 #Extracting the coefficents
@@ -168,8 +177,10 @@ cf <- coef(linear_model)
 #I have taken a long-term decline, but when I reduce the dataset to fit the day
 #of interestet the intercept is not an appropriate match for the location before
 #discharge begins to rise. I adjust that until there is an appropriate fit.
+event7 <- usgsdis("13010065", "00060","2023-06-29", "2023-07-06")  
 event7 <- event7 %>% 
-  mutate(estimate_discharge = (cf[1] - 1.37) + (cf[2] * count))
+  mutate(count = seq(1:nrow(event7)),
+         estimate_discharge = (cf[1] + 9.1) + (cf[2] * count))
 
 #Plotting the discharge data and the linear model
 ggplot()+
@@ -195,18 +206,34 @@ ggplot()+
   geom_vline(xintercept = as.numeric(as.POSIXct("2023-07-05 20:00:00", tz="UTC")), color = "red")
 #Values of isotopes to input into mixing model
 d18O <- -18.315115464
+d2H <- -135.371214379
 d18Op <- -9.803027243
+d2Hp <- -74.516108644
 d18Or <- -18.25802
-#Calculating isotopic value of river pre rain.
-deltapre7 <- ((sum(revent7$X_00060_00000) * d18O) - ((sum(revent7$X_00060_00000) - sum(revent7$estimate_discharge)) * d18Op))/ 
-  sum(revent7$estimate_discharge)
+d2Hr <- -135.0432
 
+
+#Calculating isotopic value of river pre rain.
+deltaOpre7 <- ((sum(revent7$X_00060_00000) * d18Or) - ((sum(revent7$X_00060_00000) - sum(revent7$estimate_discharge)) * d18Op))/ 
+  sum(revent7$estimate_discharge)
+deltaHpre7 <- ((sum(revent7$X_00060_00000) * d2Hr) - ((sum(revent7$X_00060_00000) - sum(revent7$estimate_discharge)) * d2Hp))/ 
+  sum(revent7$estimate_discharge)
 
 #I am calling data for event 8. 
 #For event 8 going pre-sampling provides a better long-term signal.
 #Dates before August 21st are heavily influence by rain events
-event8 <- usgsdis("13010065", "00060","2023-08-11", "2023-08-18") 
-e8p <- precip(upper.snake.precip.month, "2023-08-11", "2023-08-18")
+event8 <- usgsdis("13010065", "00060","2023-08-11", "2023-08-22") 
+e8p <- precip(upper.snake.precip.month, "2023-08-11", "2023-08-22")
+e8 <- disprecipplot(event8, event8$dateTime, event8$X_00060_00000, e8p, e8p$dateTime, e8p$prcp.mm, 1,
+                    bquote(Discharge (m^3/s)), "Precipitation (mm)", "2023-08-21 20:45:00")
+e8
+
+rain_start <- as.POSIXct("2023-08-10 20:00:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2023-08-19 12:45:00",tz = "UTC")
+event8 <- usgsdis("13010065", "00060","2023-08-10", "2023-08-20") %>%  
+  filter(between(dateTime, rain_start, rain_end))
+e8p <- precip(upper.snake.precip.month, "2023-08-11", "2023-08-21")
 e8 <- disprecipplot(event8, event8$dateTime, event8$X_00060_00000, e8p, e8p$dateTime, e8p$prcp.mm, 1,
                     bquote(Discharge (m^3/s)), "Precipitation (mm)", "2023-08-21 20:45:00")
 e8
@@ -225,7 +252,7 @@ cf <- coef(linear_model)
 event8 <- usgsdis("13010065", "00060","2023-08-11", "2023-08-22")
 event8 <- event8 %>% 
   mutate(count = seq(1:nrow(event8))) %>% 
-  mutate(estimate_discharge = (cf[1] + (cf[2] * count)))
+  mutate(estimate_discharge = ((cf[1]-0.1)+ (cf[2] * count)))
 
 #Plotting the discharge data and the linear model
 ggplot()+
@@ -240,7 +267,7 @@ ggplot()+
 #Start of rise in discharge
 rain_start <- as.POSIXct("2023-08-19 08:45:00",tz = "UTC")
 #Rise over
-rain_end <- as.POSIXct("2023-08-21 05:45:00",tz = "UTC")
+rain_end <- as.POSIXct("2023-08-21 20:45:00",tz = "UTC")
 revent8 <- event8 %>%  
   filter(between(dateTime, rain_start, rain_end))
 #Plotting to ensure fit is good
@@ -249,23 +276,29 @@ ggplot()+
   geom_line(data = revent8, aes(x = dateTime, y = estimate_discharge), color = "blue")+
   geom_vline(xintercept = as.numeric(as.POSIXct("2023-08-21 20:45:00", tz="UTC")), color = "red")
 #Values of isotopes to input into mixing model
-d18O <- -18.315115464
+d18O <- -17.262355910
+d2H <- -131.079154858
 d18Op <- -5.990206792
+d2Hp <- -51.842890805
 d18Or <- -16.77375
+d2Hr <- -127.1052
 #Calculating isotopic value of river pre rain.
-deltapre8 <- ((sum(revent8$X_00060_00000) * d18O) - ((sum(revent8$X_00060_00000) - sum(revent8$estimate_discharge)) * d18Op))/ 
+deltaOpre8 <- ((sum(revent8$X_00060_00000) * d18Or) - ((sum(revent8$X_00060_00000) - sum(revent8$estimate_discharge)) * d18Op))/ 
   sum(revent8$estimate_discharge)
+deltaHpre8 <- ((sum(revent8$X_00060_00000) * d2Hr) - ((sum(revent8$X_00060_00000) - sum(revent8$estimate_discharge)) * d2Hp))/ 
+  sum(revent8$estimate_discharge)
+
 
 ####Event 9####
 #I am calling data for event 9. 
 #For event 9 going pre-sampling provides a better long-term signal.
-event9 <- usgsdis("13010065", "00060","2023-09-08", "2023-09-21") 
-e9p <- precip(upper.snake.precip.month,'2023-09-08', '2023-09-21')
+event9 <- usgsdis("13010065", "00060","2023-09-08", "2023-09-22") 
+e9p <- precip(upper.snake.precip.month,'2023-09-08', '2023-09-22')
 e9 <- disprecipplot(event9, event9$dateTime, event9$X_00060_00000, e9p, e9p$dateTime, e9p$prcp.mm, 1.1,
                     bquote(Discharge (m^3/s)), "Precipitation (mm)", "2023-09-21 17:45:00")+ 
   annotate("text",x = as.POSIXct("2023-09-08 23:00:00"), y = 17,size = 10,label = "E/I = -0.025")
-
 e9
+
 #Dates before August 21st are heavily influence by rain events
 #Start of rise in discharge
 rain_start <- as.POSIXct("2023-09-09 00:00:00",tz = "UTC")
@@ -305,7 +338,7 @@ ggplot()+
 #discharge. I will fit the model assuming this is an estimate of discharge values
 #that would occur if not precipitation occurred.
 #Start of rise in discharge
-rain_start <- as.POSIXct("2023-09-20 23:45:00",tz = "UTC")
+rain_start <- as.POSIXct("2023-09-20 20:45:00",tz = "UTC")
 #Rise over
 rain_end <- as.POSIXct("2023-09-21 17:45:00",tz = "UTC")
 revent9 <- event9 %>%  
@@ -316,9 +349,88 @@ ggplot()+
   geom_line(data = revent9, aes(x = dateTime, y = estimate_discharge), color = "blue")+
   geom_vline(xintercept = as.numeric(as.POSIXct("2023-09-21 17:45:00", tz="UTC")), color = "red")
 #Values of isotopes to input into mixing model
-d18O <- -17.262355910
+d18O <- -16.89309071
+d2H <- -129.33942217
 d18Op <- -10.57452193
-d18Or <- -17.92000
+d2Hp <- -84.29297382
+d18Or <- -16.70478
+d2Hr<- -126.1175
+
 #Calculating isotopic value of river pre rain.
-deltapre9 <- ((sum(revent9$X_00060_00000) * d18O) - ((sum(revent9$X_00060_00000) - sum(revent9$estimate_discharge)) * d18Op))/ 
+deltaOpre9 <- ((sum(revent9$X_00060_00000) * d18Or) - ((sum(revent9$X_00060_00000) - sum(revent9$estimate_discharge)) * d18Op))/ 
   sum(revent9$estimate_discharge)
+deltaHpre9 <- ((sum(revent9$X_00060_00000) * d2Hr) - ((sum(revent9$X_00060_00000) - sum(revent9$estimate_discharge)) * d2Hp))/ 
+  sum(revent9$estimate_discharge)
+
+####Event 12####
+event12 <- usgsdis("13010065", "00060","2024-07-29", "2024-08-17") 
+e12p <- precip(upper.snake.precip.month,'2024-07-29', '2024-08-17')
+e12 <- disprecipplot(event12, event12$dateTime, event12$X_00060_00000, e12p, e12p$dateTime, e12p$prcp.mm, 1.3,
+                     bquote(Discharge (m^3/s)), "Precipitation (mm)", "2024-08-16 18:00:00")+ 
+  annotate("text",x = as.POSIXct("2024-08-04 12:00:00"), y = 13,size =10,label = "E/I = -0.009")
+e12
+#Pre-rain event there is a long-term decline not affected from a precipitation event.
+#This will be used as the long-term decline.
+#Adding a count column to more easily run my linear model.
+#Removing Precipitation event to get long term decline
+#Start of rise in discharge
+rain_start <- as.POSIXct("2024-07-29 00:00:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2024-08-11 00:00:00",tz = "UTC")
+event12 <- usgsdis("13010065", "00060","2024-07-29", "2024-08-21") %>%  
+  filter(between(dateTime, rain_start, rain_end))
+e12p <- precip(upper.snake.precip.month,'2024-07-29', '2024-08-13')
+e12 <- disprecipplot(event12, event12$dateTime, event12$X_00060_00000, e12p, e12p$dateTime, e12p$prcp.mm, 1.3,
+                     bquote(Discharge (m^3/s)), "Precipitation (mm)", "2024-08-16 18:00:00")
+e12
+#Adding a column to make the linear regression simpler
+event12 <- event12 %>% 
+  mutate(count = seq(1:nrow(event12)))
+
+#Fitting a linear model to pre-event rain. This allows me to estimate what the 
+linear_model <- lm(X_00060_00000 ~ count, data=event12) 
+#Extracting the coefficents
+cf <- coef(linear_model)
+#I have taken a long-term decline, but when I reduce the dataset to fit the day
+#of interest the intercept is not an appropriate match for the location before
+#discharge begins to rise. I adjust that until there is an appropriate fit.
+#Start of rise in discharge
+rain_start <- as.POSIXct("2024-07-29 00:00:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2024-08-11 00:00:00",tz = "UTC")
+event12 <- usgsdis("13010065", "00060","2024-07-29", "2024-08-21")
+event12 <- event12 %>% 
+  mutate(count = seq(1:nrow(event12))) %>% 
+  mutate(estimate_discharge = ((cf[1]-.1)+(cf[2] * count)))
+
+#Start of rise in discharge
+rain_start <- as.POSIXct("2024-08-10 03:00:00",tz = "UTC")
+#Rise over
+rain_end <- as.POSIXct("2024-08-16 18:00:00",tz = "UTC")
+revent12 <- event12 %>% 
+  filter(between(dateTime, rain_start, rain_end))
+
+#Plotting the discharge data and the linear model
+ggplot()+
+  geom_line(data = event12, aes(x = dateTime, y = X_00060_00000))+
+  geom_line(data = event12, aes(x = dateTime, y = estimate_discharge), color = "blue")+
+  geom_vline(xintercept = as.numeric(as.POSIXct("2024-08-16 18:00:00", tz="UTC")), color = "red")
+
+#Values of isotopes to input into mixing model
+d18O <- -17.113812542
+d2H <- -129.745070566
+d18Op <- -5.990206792
+d2Hp <- -51.842890805
+d18Or <- -17.27776
+d2Hr<- -130.7644
+
+#Calculating isotopic value of river pre rain.
+deltaOpre12 <- ((sum(revent12$X_00060_00000) * d18Or) - ((sum(revent12$X_00060_00000) - sum(revent12$estimate_discharge)) * d18Op))/ 
+  sum(revent12$estimate_discharge)
+deltaHpre12 <- ((sum(revent12$X_00060_00000) * d2Hr) - ((sum(revent12$X_00060_00000) - sum(revent12$estimate_discharge)) * d2Hp))/ 
+  sum(revent12$estimate_discharge)
+
+prerain_river_iso <- data.frame(Event = c(7,8,9,12),
+                                d18Or = c(deltaOpre7,deltaOpre8,deltaOpre9,deltaOpre12),
+                                d2Hr = c(deltaHpre7,deltaHpre8,deltaHpre9,deltaHpre12))
+write_csv(prerain_river_iso, "~/Documents/Data/Chapter.3/Isotope.Data/prerain_river_iso.csv")
