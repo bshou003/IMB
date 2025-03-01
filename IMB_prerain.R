@@ -211,6 +211,16 @@ river <- stream.isotopes %>%
   #Arranging in order by event since it was a character
   arrange(Event)
 
+prerain_ratio <- prerain %>% 
+  subset(select = c(Event, d18Oratio, d2Hratio))
+
+stream.isotopes <- stream.isotopes %>%
+  merge(prerain_ratio) %>%
+  mutate(d18Odiff = d18O * d18Oratio,
+         d2Hdiff = d2H * d2Hratio,
+         d18O = d18O - d18Odiff,
+         d2H = d2H - d2Hdiff)
+
 lake.outlet <- read.csv("~/Documents/Data/Chapter.3/Isotope.Data/isotope.data") |> 
   filter(Setting.Type == "Lake.outlet") |> 
   subset(select = -c(SITE,seq_position, Setting.Type, ON)) |> 
